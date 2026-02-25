@@ -3433,10 +3433,25 @@ function updateMeetingTimer() {
 // ============================================
 socket.on('connect', () => {
   myId = socket.id;
+  // Auto-rejoin if we had a session (mobile reconnect after minimize/screen off)
+  const savedRoom = sessionStorage.getItem('sb_room');
+  const savedName = sessionStorage.getItem('sb_name');
+  if (savedRoom && savedName && gamePhase !== 'menu') {
+    socket.emit('rejoinRoom', { code: savedRoom, name: savedName });
+  }
+});
+
+socket.on('rejoinFailed', () => {
+  sessionStorage.removeItem('sb_room');
+  sessionStorage.removeItem('sb_name');
+  gamePhase = 'menu';
+  showScreen(menuScreen);
 });
 
 socket.on('roomCreated', ({ code, player, settings: s }) => {
   roomCode = code;
+  sessionStorage.setItem('sb_room', code);
+  sessionStorage.setItem('sb_name', player.name);
   settings = s;
   isHost = socket.id;
   gamePhase = 'lobby';
@@ -3455,6 +3470,9 @@ socket.on('roomCreated', ({ code, player, settings: s }) => {
 
 socket.on('roomJoined', ({ code, players: pList, settings: s, host }) => {
   roomCode = code;
+  sessionStorage.setItem('sb_room', code);
+  const me = pList.find(p => p.id === socket.id);
+  if (me) sessionStorage.setItem('sb_name', me.name);
   settings = s;
   isHost = host;
   gamePhase = 'lobby';

@@ -844,6 +844,53 @@ io.on('connection', (socket) => {
     socket.emit('ventTeleport', { x: dest.x, y: dest.y });
   });
 
+  // --- REJOIN (mobile reconnection) ---
+  socket.on('rejoinRoom', ({ code, name }) => {
+    const key = code + ':' + name;
+    const pending = pendingReconnects.get(key);
+    if (!pending) {
+      socket.emit('rejoinFailed');
+      return;
+    }
+    const room = rooms.get(pending.roomCode);
+    if (!room) {
+      pendingReconnects.delete(key);
+      socket.emit('rejoinFailed');
+      return;
+    }
+    // Clear the grace timeout
+    clearTimeout(pending.timeout);
+    pendingReconnects.delete(key);
+    // Restore player with new socket id
+    const playerData = pending.playerData;
+    playerData.id = socket.id;
+    room.players.set(socket.id, playerData);
+    socketToRoom.set(socket.id, pending.roomCode);
+    socket.join(pending.roomCode);
+
+    if (room.phase === 'lobby') {
+      const pList = [...room.players.values()].map(p => ({ id: p.id, name: p.name, color: p.color, hat: p.hat, outfit: p.outfit, avatar: p.avatar }));
+      socket.emit('roomJoined', { code: pending.roomCode, players: pList, settings: room.settings, host: room.host });
+      io.to(pending.roomCode).emit('playerJoined', { id: socket.id, name: playerData.name, color: playerData.color, hat: playerData.hat, outfit: playerData.outfit, avatar: playerData.avatar });
+    } else {
+      // Rejoin mid-game: send gameStarted with current state
+      const otherImp = playerData.role === 'impostor'
+        ? [...room.players.values()].filter(p => p.role === 'impostor' && p.id !== socket.id).map(p => ({ id: p.id, name: p.name }))
+        : [];
+      const pList = [...room.players.values()].map(p => ({
+        id: p.id, name: p.name, color: p.color, hat: p.hat, outfit: p.outfit, avatar: p.avatar,
+        x: p.x, y: p.y, alive: p.alive, killCooldown: p.role === 'impostor' ? p.killCooldown : undefined,
+      }));
+      socket.emit('gameStarted', {
+        role: playerData.role,
+        tasks: playerData.tasks,
+        players: pList,
+        otherImpostors: otherImp,
+        settings: room.settings,
+      });
+    }
+  });
+
   // --- DISCONNECT ---
   socket.on('disconnect', () => {
     const roomCode = socketToRoom.get(socket.id);
@@ -851,33 +898,59 @@ io.on('connection', (socket) => {
     const room = rooms.get(roomCode);
     if (!room) return;
 
+    const player = room.players.get(socket.id);
+    if (!player) return;
+
+    // Save player data for potential reconnection
+    const playerData = { ...player };
+    const key = roomCode + ':' + player.name;
+
     room.players.delete(socket.id);
     socketToRoom.delete(socket.id);
 
     if (room.players.size === 0) {
-      cleanupRoom(roomCode);
+      // Last player - clean up after grace period too
+      const timeout = setTimeout(() => {
+        pendingReconnects.delete(key);
+        if (rooms.has(roomCode) && rooms.get(roomCode).players.size === 0) {
+          cleanupRoom(roomCode);
+        }
+      }, RECONNECT_GRACE_MS);
+      pendingReconnects.set(key, { playerData, roomCode, timeout, oldSocketId: socket.id });
       return;
     }
 
-    // Transfer host if needed
+    // Store pending reconnect with grace period
+    const timeout = setTimeout(() => {
+      pendingReconnects.delete(key);
+      // Player didn't reconnect - notify others
+      io.to(roomCode).emit('playerLeft', { playerId: playerData.id });
+      const currentRoom = rooms.get(roomCode);
+      if (currentRoom) {
+        // Transfer host if this was the host
+        if (currentRoom.host === playerData.id && currentRoom.players.size > 0) {
+          currentRoom.host = currentRoom.players.keys().next().value;
+          io.to(roomCode).emit('hostChanged', { hostId: currentRoom.host });
+        }
+        if (currentRoom.phase === 'playing' || currentRoom.phase === 'meeting' || currentRoom.phase === 'voting') {
+          checkWinConditions(currentRoom);
+          if (currentRoom.phase === 'voting') {
+            const aliveCount = [...currentRoom.players.values()].filter(p => p.alive).length;
+            if (currentRoom.votes.size >= aliveCount) {
+              clearTimeout(currentRoom.votingTimer);
+              tallyVotes(currentRoom);
+            }
+          }
+        }
+      }
+    }, RECONNECT_GRACE_MS);
+
+    pendingReconnects.set(key, { playerData, roomCode, timeout, oldSocketId: socket.id });
+
+    // Transfer host immediately if needed (so game can continue)
     if (room.host === socket.id) {
       room.host = room.players.keys().next().value;
       io.to(room.code).emit('hostChanged', { hostId: room.host });
-    }
-
-    io.to(room.code).emit('playerLeft', { playerId: socket.id });
-
-    if (room.phase === 'playing' || room.phase === 'meeting' || room.phase === 'voting') {
-      checkWinConditions(room);
-
-      // If during voting, check if all remaining alive have voted
-      if (room.phase === 'voting') {
-        const aliveCount = [...room.players.values()].filter(p => p.alive).length;
-        if (room.votes.size >= aliveCount) {
-          clearTimeout(room.votingTimer);
-          tallyVotes(room);
-        }
-      }
     }
   });
 });
