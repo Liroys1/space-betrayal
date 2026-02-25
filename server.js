@@ -45,6 +45,7 @@ const MAP = {
     { name: 'Lower Engine', x: 750,  y: 950,  w: 300, h: 200 },
     { name: 'Shields',      x: 1150, y: 950,  w: 250, h: 200 },
     { name: 'Navigation',   x: 800,  y: 1250, w: 250, h: 180 },
+    { name: 'Kitchen',      x: 1150, y: 1200, w: 280, h: 220 },
   ],
   hallways: [
     // Vertical hallways (overlap 20px into rooms on each side)
@@ -59,6 +60,7 @@ const MAP = {
     { x: 1030, y: 700, w: 140, h: 60 },  // Storage <-> O2
     { x: 630, y: 1000, w: 140, h: 60 },  // Electrical <-> Lower Engine
     { x: 1030, y: 1000, w: 140, h: 60 }, // Lower Engine <-> Shields
+    { x: 1250, y: 1130, w: 60, h: 90 },  // Shields <-> Kitchen
   ],
   emergencyButton: { x: 900, y: 425 },
   spawnPoint: { x: 900, y: 425 },
@@ -77,6 +79,8 @@ const TASK_DEFINITIONS = [
   { id: 'medscan_1',    type: 'download',  roomName: 'MedBay',       x: 500, y: 430 },
   { id: 'shields_1',    type: 'wires',     roomName: 'Shields',      x: 1250, y: 1020 },
   { id: 'security_1',   type: 'download',  roomName: 'Security',     x: 500, y: 730 },
+  { id: 'kitchen_cook',  type: 'calibrate', roomName: 'Kitchen',      x: 1200, y: 1230 },
+  { id: 'kitchen_fridge',type: 'download',  roomName: 'Kitchen',      x: 1370, y: 1300 },
 ];
 
 // ============================================

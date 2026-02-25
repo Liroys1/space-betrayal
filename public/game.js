@@ -34,6 +34,7 @@ const MAP = {
     { name: 'Lower Engine', x: 750,  y: 950,  w: 300, h: 200, color: '#1a2e1a' },
     { name: 'Shields',      x: 1150, y: 950,  w: 250, h: 200, color: '#2a1a3a' },
     { name: 'Navigation',   x: 800,  y: 1250, w: 250, h: 180, color: '#1a1a3a' },
+    { name: 'Kitchen',      x: 1150, y: 1200, w: 280, h: 220, color: '#2a2a1e' },
   ],
   hallways: [
     // Vertical hallways (overlap 20px into rooms on each side)
@@ -48,6 +49,7 @@ const MAP = {
     { x: 1030, y: 700, w: 140, h: 60 },  // Storage <-> O2
     { x: 630, y: 1000, w: 140, h: 60 },  // Electrical <-> Lower Engine
     { x: 1030, y: 1000, w: 140, h: 60 }, // Lower Engine <-> Shields
+    { x: 1250, y: 1130, w: 60, h: 90 },  // Shields <-> Kitchen
   ],
   emergencyButton: { x: 900, y: 425 },
   spawnPoint: { x: 900, y: 425 },
@@ -1489,6 +1491,121 @@ function drawRoomDecorations(room, s, time) {
       ctx.beginPath(); ctx.arc(sgx, sgy, 10, 0, Math.PI * 2); ctx.stroke();
       ctx.fillStyle = `rgba(120,120,255,${0.2 + Math.sin(time * 0.003) * 0.1})`;
       ctx.fill();
+      break;
+
+    case 'Kitchen':
+      // === Based on user's real kitchen photo ===
+      // Kitchen counters along top wall
+      ctx.fillStyle = '#3a3a3a';
+      ctx.fillRect(s.x + room.w - 70, s.y + 8, 65, 30);
+      ctx.strokeStyle = '#555';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(s.x + room.w - 70, s.y + 8, 65, 30);
+      // Counter handles
+      for (let ch = 0; ch < 3; ch++) {
+        ctx.fillStyle = '#777';
+        ctx.fillRect(s.x + room.w - 65 + ch * 22, s.y + 28, 12, 2);
+      }
+
+      // Upper cabinets (along top-right)
+      ctx.fillStyle = '#484848';
+      ctx.fillRect(s.x + room.w - 70, s.y + 2, 65, 8);
+      ctx.strokeStyle = '#5a5a5a';
+      ctx.strokeRect(s.x + room.w - 70, s.y + 2, 30, 8);
+      ctx.strokeRect(s.x + room.w - 38, s.y + 2, 33, 8);
+
+      // Fridge (tall, right side)
+      ctx.fillStyle = '#b0b8c0';
+      ctx.fillRect(s.x + room.w - 45, s.y + 45, 35, 55);
+      ctx.strokeStyle = '#8a9298';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(s.x + room.w - 45, s.y + 45, 35, 55);
+      // Fridge handle
+      ctx.fillStyle = '#666';
+      ctx.fillRect(s.x + room.w - 44, s.y + 55, 3, 20);
+      // Fridge line (freezer/fridge divide)
+      ctx.strokeStyle = '#8a9298';
+      ctx.beginPath();
+      ctx.moveTo(s.x + room.w - 45, s.y + 68);
+      ctx.lineTo(s.x + room.w - 10, s.y + 68);
+      ctx.stroke();
+
+      // Microwave on cabinet (top-left area)
+      ctx.fillStyle = '#3a3a42';
+      ctx.fillRect(s.x + 10, s.y + 10, 40, 35);
+      ctx.strokeStyle = '#555';
+      ctx.strokeRect(s.x + 10, s.y + 10, 40, 35);
+      // Microwave door
+      ctx.fillStyle = '#1a1a20';
+      ctx.fillRect(s.x + 14, s.y + 15, 25, 22);
+      // Microwave display (glowing)
+      const mwGlow = 0.5 + Math.sin(time * 0.003) * 0.3;
+      ctx.fillStyle = `rgba(50,200,80,${mwGlow})`;
+      ctx.fillRect(s.x + 42, s.y + 16, 5, 6);
+      // Cabinet under microwave
+      ctx.fillStyle = '#3a3a3a';
+      ctx.fillRect(s.x + 5, s.y + 45, 50, 30);
+      ctx.strokeStyle = '#555';
+      ctx.strokeRect(s.x + 5, s.y + 45, 50, 30);
+      ctx.strokeRect(s.x + 5, s.y + 45, 25, 30);
+
+      // L-shaped sofa (gray, center-top area)
+      // Horizontal part
+      ctx.fillStyle = '#4a4a52';
+      ctx.fillRect(s.x + 70, s.y + 25, 110, 35);
+      ctx.strokeStyle = '#3a3a42';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(s.x + 70, s.y + 25, 110, 35);
+      // Vertical part (L extension)
+      ctx.fillStyle = '#4a4a52';
+      ctx.fillRect(s.x + 155, s.y + 25, 35, 65);
+      ctx.strokeStyle = '#3a3a42';
+      ctx.strokeRect(s.x + 155, s.y + 25, 35, 65);
+      // Cushion lines
+      ctx.strokeStyle = '#555';
+      ctx.beginPath();
+      ctx.moveTo(s.x + 105, s.y + 28); ctx.lineTo(s.x + 105, s.y + 57);
+      ctx.moveTo(s.x + 140, s.y + 28); ctx.lineTo(s.x + 140, s.y + 57);
+      ctx.stroke();
+      // Armrest on right side of L
+      ctx.fillStyle = '#404048';
+      ctx.fillRect(s.x + 158, s.y + 85, 30, 8);
+
+      // Coffee table (wooden, center)
+      ctx.fillStyle = '#7a5c3a';
+      ctx.fillRect(s.x + 95, s.y + 100, 55, 30);
+      ctx.strokeStyle = '#5a3e22';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(s.x + 95, s.y + 100, 55, 30);
+      // Wood grain lines
+      ctx.strokeStyle = 'rgba(100,70,40,0.4)';
+      ctx.beginPath();
+      ctx.moveTo(s.x + 100, s.y + 110); ctx.lineTo(s.x + 145, s.y + 110);
+      ctx.moveTo(s.x + 100, s.y + 120); ctx.lineTo(s.x + 145, s.y + 120);
+      ctx.stroke();
+
+      // Recliner (dark, bottom-left)
+      ctx.fillStyle = '#2a2a30';
+      ctx.beginPath();
+      ctx.moveTo(s.x + 15, s.y + 140);
+      ctx.lineTo(s.x + 55, s.y + 140);
+      ctx.lineTo(s.x + 55, s.y + 185);
+      ctx.lineTo(s.x + 15, s.y + 185);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#1a1a20';
+      ctx.stroke();
+      // Recliner cushion
+      ctx.fillStyle = '#333340';
+      ctx.fillRect(s.x + 19, s.y + 145, 32, 25);
+      // Armrests
+      ctx.fillStyle = '#222228';
+      ctx.fillRect(s.x + 12, s.y + 142, 6, 40);
+      ctx.fillRect(s.x + 52, s.y + 142, 6, 40);
+
+      // Floor rug (subtle, under coffee table area)
+      ctx.fillStyle = 'rgba(60,80,60,0.15)';
+      ctx.fillRect(s.x + 70, s.y + 85, 120, 65);
       break;
   }
 
