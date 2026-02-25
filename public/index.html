@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
+  <title>Space Betrayal</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a1a; overflow: hidden; font-family: 'Exo 2', 'Segoe UI', Arial, sans-serif; color: #fff; touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+    canvas { display: block; touch-action: none; }
+
+    .overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      display: none; justify-content: center; align-items: center;
+      z-index: 10; background: rgba(0,0,0,0.7);
+    }
+    .overlay.active { display: flex; }
+
+    .panel {
+      background: linear-gradient(135deg, #1a1a3e, #0d0d2b);
+      border: 2px solid #333;
+      border-radius: 16px; padding: 40px; color: #fff;
+      min-width: 340px; text-align: center;
+      box-shadow: 0 0 40px rgba(100, 100, 255, 0.1);
+    }
+
+    h1 { font-family: 'Orbitron', sans-serif; font-size: 2.5em; margin-bottom: 10px; letter-spacing: 4px; color: #ff4444; text-shadow: 0 0 20px rgba(255,68,68,0.5), 0 0 60px rgba(255,68,68,0.2); }
+    h2 { font-size: 1.5em; margin-bottom: 15px; color: #aaa; }
+    h3 { font-size: 1.2em; margin-bottom: 10px; }
+
+    .subtitle { color: #888; font-size: 0.9em; margin-bottom: 25px; }
+
+    input[type="text"] {
+      width: 100%; padding: 12px 16px; margin: 8px 0;
+      background: #111; border: 2px solid #333; border-radius: 8px;
+      color: #fff; font-size: 1em; outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type="text"]:focus { border-color: #5555ff; }
+    input[type="text"]::placeholder { color: #555; }
+
+    .btn {
+      display: inline-block; padding: 12px 30px; margin: 8px 4px;
+      background: #2a2a6a; border: 2px solid #4444aa; border-radius: 8px;
+      color: #fff; font-size: 1em; cursor: pointer;
+      transition: all 0.2s; font-weight: bold;
+    }
+    .btn:hover { background: #3a3a8a; border-color: #6666cc; transform: translateY(-1px); }
+    .btn.primary { background: #cc3333; border-color: #ff4444; }
+    .btn.primary:hover { background: #dd4444; }
+    .btn.success { background: #227722; border-color: #33aa33; }
+    .btn.success:hover { background: #33aa33; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+    .room-code {
+      font-size: 2.5em; letter-spacing: 8px; font-weight: bold;
+      color: #ffdd44; margin: 15px 0;
+      text-shadow: 0 0 10px rgba(255,221,68,0.3);
+    }
+
+    .player-list {
+      list-style: none; margin: 15px 0; max-height: 250px;
+      overflow-y: auto; text-align: left;
+    }
+    .player-list li {
+      padding: 8px 12px; margin: 4px 0;
+      background: rgba(255,255,255,0.05); border-radius: 6px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .player-color {
+      width: 24px; height: 24px; border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.3); flex-shrink: 0;
+    }
+    .player-name { flex: 1; }
+    .host-badge { font-size: 0.8em; color: #ffdd44; }
+
+    /* Skin customizer */
+    .skin-customizer {
+      background: rgba(0,0,0,0.3); border-radius: 12px; padding: 15px;
+      margin: 15px 0; display: flex; flex-direction: column; align-items: center; gap: 10px;
+    }
+    #skin-preview { border-radius: 8px; background: rgba(0,0,0,0.4); }
+    .skin-row {
+      display: flex; align-items: center; gap: 8px;
+    }
+    .skin-arrow {
+      background: #2a2a6a; border: 1px solid #4444aa; border-radius: 6px;
+      color: #fff; width: 32px; height: 32px; font-size: 14px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s;
+    }
+    .skin-arrow:hover { background: #3a3a8a; }
+    .skin-label {
+      min-width: 100px; text-align: center; font-size: 0.95em; color: #ddd;
+    }
+    .skin-category { font-size: 0.8em; color: #888; min-width: 45px; }
+
+    .divider { border: none; border-top: 1px solid #333; margin: 20px 0; }
+
+    .error-msg { color: #ff4444; font-size: 0.9em; margin: 8px 0; min-height: 1.2em; }
+
+    /* Meeting screen */
+    .meeting-panel {
+      background: linear-gradient(135deg, #1a1a3e, #0d0d2b);
+      border: 2px solid #333; border-radius: 16px; padding: 30px;
+      min-width: 500px; max-width: 700px; max-height: 80vh; overflow-y: auto;
+    }
+    .meeting-header { font-size: 1.3em; margin-bottom: 15px; color: #ffaa00; }
+    .timer { font-size: 1.5em; color: #ff4444; margin: 10px 0; }
+
+    .vote-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 8px; margin: 15px 0;
+    }
+    .vote-card {
+      padding: 10px; background: rgba(255,255,255,0.05);
+      border: 2px solid #333; border-radius: 8px;
+      cursor: pointer; display: flex; align-items: center; gap: 8px;
+      transition: all 0.2s;
+    }
+    .vote-card:hover:not(.dead):not(.voted):not(.disabled) {
+      border-color: #5555ff; background: rgba(85,85,255,0.1);
+    }
+    .vote-card.dead { opacity: 0.3; cursor: default; text-decoration: line-through; }
+    .vote-card.selected { border-color: #ff4444; background: rgba(255,68,68,0.2); }
+    .vote-card.disabled { cursor: default; }
+    .vote-card .check { margin-left: auto; color: #44ff44; display: none; }
+    .vote-card .check.visible { display: inline; }
+
+    /* Results */
+    .result-text { font-size: 1.5em; margin: 20px 0; }
+    .result-role { font-size: 1.1em; margin: 10px 0; }
+
+    /* Game over */
+    .gameover-panel {
+      background: linear-gradient(135deg, #1a1a3e, #0d0d2b);
+      border: 2px solid #333; border-radius: 16px; padding: 40px;
+      min-width: 400px; max-width: 600px; text-align: center;
+    }
+    .gameover-panel.crewmates { border-color: #33aa33; }
+    .gameover-panel.impostors { border-color: #ff4444; }
+    .win-title { font-size: 2em; margin-bottom: 10px; }
+    .win-reason { color: #aaa; margin-bottom: 20px; }
+    .role-list { list-style: none; text-align: left; margin: 15px 0; }
+    .role-list li {
+      padding: 6px 10px; margin: 3px 0; border-radius: 4px;
+      display: flex; align-items: center; gap: 8px;
+      background: rgba(255,255,255,0.05);
+    }
+    .role-list .role-tag { font-size: 0.8em; padding: 2px 6px; border-radius: 4px; }
+    .role-tag.impostor { background: #ff4444; }
+    .role-tag.crewmate { background: #33aa33; }
+    .dead-marker { color: #ff4444; font-size: 0.8em; }
+
+    /* Task overlay */
+    .task-panel {
+      background: linear-gradient(135deg, #1a1a3e, #0d0d2b);
+      border: 2px solid #333; border-radius: 16px; padding: 30px;
+      min-width: 400px; min-height: 300px; position: relative;
+    }
+    .task-title { font-size: 1.2em; margin-bottom: 15px; }
+    #task-canvas { display: block; margin: 0 auto; border-radius: 8px; background: #111; }
+    .task-close {
+      position: absolute; top: 10px; right: 15px;
+      font-size: 1.5em; cursor: pointer; color: #888;
+    }
+    .task-close:hover { color: #fff; }
+
+    /* Mobile joystick */
+    #mobile-joystick {
+      display: none; position: fixed; bottom: 30px; left: 30px; z-index: 20;
+      width: 130px; height: 130px; touch-action: none;
+    }
+    #mobile-joystick .joystick-base {
+      position: absolute; width: 130px; height: 130px; border-radius: 50%;
+      background: rgba(255,255,255,0.08); border: 2px solid rgba(255,255,255,0.15);
+    }
+    #mobile-joystick .joystick-thumb {
+      position: absolute; width: 50px; height: 50px; border-radius: 50%;
+      background: rgba(255,255,255,0.25); border: 2px solid rgba(255,255,255,0.3);
+      left: 40px; top: 40px; transition: none;
+    }
+
+    /* Mobile action buttons */
+    #mobile-actions {
+      display: none; position: fixed; bottom: 30px; right: 20px; z-index: 20;
+    }
+    .mobile-action-btn {
+      width: 64px; height: 64px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3);
+      font-family: 'Exo 2', sans-serif; font-weight: 700; font-size: 11px; color: #fff;
+      display: flex; align-items: center; justify-content: center; text-align: center;
+      margin: 6px; cursor: pointer; touch-action: none; line-height: 1.1;
+    }
+
+    @media (max-width: 768px) {
+      .panel { min-width: 280px; padding: 25px 20px; }
+      h1 { font-size: 1.8em; }
+      .meeting-panel { min-width: 90vw; padding: 15px; }
+      .vote-grid { grid-template-columns: 1fr; }
+      .room-code { font-size: 2em; letter-spacing: 5px; }
+      .skin-customizer { padding: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <canvas id="gameCanvas"></canvas>
+
+  <!-- MENU SCREEN -->
+  <div id="menu-screen" class="overlay active">
+    <div class="panel">
+      <h1>SPACE BETRAYAL</h1>
+      <p class="subtitle">A social deduction game</p>
+      <input type="text" id="name-input" placeholder="Enter your name" maxlength="12" />
+      <div class="error-msg" id="menu-error"></div>
+      <button class="btn primary" id="create-btn">Create Game</button>
+      <hr class="divider">
+      <input type="text" id="code-input" placeholder="Room code" maxlength="6" style="text-transform:uppercase" />
+      <button class="btn" id="join-btn">Join Game</button>
+    </div>
+  </div>
+
+  <!-- LOBBY SCREEN -->
+  <div id="lobby-screen" class="overlay">
+    <div class="panel">
+      <h2>LOBBY</h2>
+      <p>Room Code:</p>
+      <div class="room-code" id="lobby-code"></div>
+      <p style="color:#888;font-size:0.85em;margin-bottom:15px">Share this code with friends</p>
+
+      <!-- Skin Customization -->
+      <div class="skin-customizer">
+        <canvas id="skin-preview" width="120" height="140"></canvas>
+        <div class="skin-row">
+          <button class="skin-arrow" id="hat-prev">&#9664;</button>
+          <span class="skin-label" id="hat-label">None</span>
+          <button class="skin-arrow" id="hat-next">&#9654;</button>
+          <span class="skin-category">Hat</span>
+        </div>
+        <div class="skin-row">
+          <button class="skin-arrow" id="outfit-prev">&#9664;</button>
+          <span class="skin-label" id="outfit-label">None</span>
+          <button class="skin-arrow" id="outfit-next">&#9654;</button>
+          <span class="skin-category">Outfit</span>
+        </div>
+      </div>
+
+      <ul class="player-list" id="lobby-players"></ul>
+      <p id="lobby-count" style="color:#888;margin:10px 0"></p>
+      <button class="btn success" id="start-btn" style="display:none">Start Game</button>
+      <p id="lobby-wait" style="color:#888;font-size:0.9em;display:none">Waiting for host to start...</p>
+    </div>
+  </div>
+
+  <!-- MEETING SCREEN -->
+  <div id="meeting-screen" class="overlay">
+    <div class="meeting-panel">
+      <div class="meeting-header" id="meeting-header"></div>
+      <div class="timer" id="meeting-timer"></div>
+      <p id="meeting-phase-label" style="color:#aaa;margin-bottom:10px"></p>
+      <div class="vote-grid" id="vote-grid"></div>
+      <button class="btn" id="skip-btn" style="margin-top:10px">Skip Vote</button>
+    </div>
+  </div>
+
+  <!-- RESULTS SCREEN -->
+  <div id="results-screen" class="overlay">
+    <div class="panel">
+      <h2>VOTING RESULTS</h2>
+      <div class="result-text" id="result-text"></div>
+      <div class="result-role" id="result-role"></div>
+    </div>
+  </div>
+
+  <!-- GAME OVER SCREEN -->
+  <div id="gameover-screen" class="overlay">
+    <div class="gameover-panel" id="gameover-panel">
+      <div class="win-title" id="win-title"></div>
+      <div class="win-reason" id="win-reason"></div>
+      <ul class="role-list" id="role-list"></ul>
+      <button class="btn primary" id="lobby-btn" style="display:none;margin-top:20px">Back to Lobby</button>
+    </div>
+  </div>
+
+  <!-- TASK SCREEN -->
+  <div id="task-screen" class="overlay">
+    <div class="task-panel">
+      <span class="task-close" id="task-close">&times;</span>
+      <div class="task-title" id="task-title"></div>
+      <canvas id="task-canvas" width="350" height="250"></canvas>
+    </div>
+  </div>
+
+  <!-- Mobile Controls -->
+  <div id="mobile-joystick">
+    <div class="joystick-base"></div>
+    <div class="joystick-thumb" id="joystick-thumb"></div>
+  </div>
+  <div id="mobile-actions"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
