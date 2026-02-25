@@ -11,6 +11,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const PORT = process.env.PORT || 3000;
 
+// Pending disconnects: stores player data during grace period for mobile reconnection
+// Key: "roomCode:playerName" -> { playerData, roomCode, timeout, oldSocketId }
+const pendingReconnects = new Map();
+const RECONNECT_GRACE_MS = 30000; // 30 seconds
+
 // ============================================
 // CONSTANTS (KEEP IN SYNC WITH game.js)
 // ============================================
@@ -27,8 +32,8 @@ const COLORS = [
   '#6b2fbb', '#71491e', '#38fedb', '#50ef39',
 ];
 
-const HATS = ['none', 'crown', 'tophat', 'partyhat', 'chef', 'headband', 'flower', 'devil', 'halo', 'beanie', 'antenna', 'pirate'];
-const OUTFITS = ['none', 'suit', 'labcoat', 'military', 'scarf', 'cape', 'toolbelt'];
+const HATS = ['none', 'crown', 'tophat', 'partyhat', 'chef', 'headband', 'flower', 'devil', 'halo', 'beanie', 'antenna', 'pirate', 'glasses', 'sunglasses', 'headphones', 'cap', 'wizard', 'cowboy', 'ninja', 'santa'];
+const OUTFITS = ['none', 'suit', 'labcoat', 'military', 'scarf', 'cape', 'toolbelt', 'astronaut', 'hoodie', 'police', 'pirate_outfit', 'ninja_outfit'];
 
 const MAP = {
   width: 2000,
@@ -60,11 +65,17 @@ const MAP = {
     { x: 1030, y: 700, w: 140, h: 60 },  // Storage <-> O2
     { x: 630, y: 1000, w: 140, h: 60 },  // Electrical <-> Lower Engine
     { x: 1030, y: 1000, w: 140, h: 60 }, // Lower Engine <-> Shields
-    { x: 1250, y: 1130, w: 60, h: 90 },  // Shields <-> Kitchen
+    { x: 1230, y: 1120, w: 80, h: 110 }, // Shields <-> Kitchen
+  ],
+  vents: [
+    { a: { x: 480, y: 1050 }, b: { x: 480, y: 750 } },   // Electrical <-> Security
+    { a: { x: 850, y: 400 },  b: { x: 480, y: 430 } },   // Cafeteria <-> MedBay
+    { a: { x: 900, y: 1320 }, b: { x: 1290, y: 1310 } },  // Navigation <-> Kitchen
   ],
   emergencyButton: { x: 900, y: 425 },
   spawnPoint: { x: 900, y: 425 },
 };
+
 
 const TASK_DEFINITIONS = [
   { id: 'wires_1',      type: 'wires',     roomName: 'Electrical',   x: 480, y: 1020 },
@@ -81,6 +92,9 @@ const TASK_DEFINITIONS = [
   { id: 'security_1',   type: 'download',  roomName: 'Security',     x: 500, y: 730 },
   { id: 'kitchen_cook',  type: 'calibrate', roomName: 'Kitchen',      x: 1200, y: 1230 },
   { id: 'kitchen_fridge',type: 'download',  roomName: 'Kitchen',      x: 1370, y: 1300 },
+  { id: 'simon_1',      type: 'simon',   roomName: 'O2',        x: 1220, y: 700 },
+  { id: 'unlock_1',     type: 'unlock',  roomName: 'Weapons',   x: 1300, y: 470 },
+  { id: 'trash_1',      type: 'trash',   roomName: 'Cafeteria', x: 900,  y: 480 },
 ];
 
 // ============================================
@@ -150,15 +164,23 @@ function buildSnapshot(room) {
 
 function assignRoles(room) {
   const playerList = [...room.players.values()];
-  const shuffled = playerList.sort(() => Math.random() - 0.5);
-  const numImpostors = room.settings.numImpostors;
+  // Prefer players who weren't impostor last round
+  const prev = room.previousImpostors || new Set();
+  const shuffled = playerList.sort((a, b) => {
+    const aWas = prev.has(a.id) ? 1 : 0;
+    const bWas = prev.has(b.id) ? 1 : 0;
+    if (aWas !== bWas) return aWas - bWas;
+    return Math.random() - 0.5;
+  });
 
+  const numImpostors = room.settings.numImpostors;
   for (let i = 0; i < shuffled.length; i++) {
     shuffled[i].role = i < numImpostors ? 'impostor' : 'crewmate';
     shuffled[i].alive = true;
     shuffled[i].killCooldown = room.settings.killCooldown;
     shuffled[i].canCallEmergency = true;
   }
+  room.previousImpostors = new Set(shuffled.filter(p => p.role === 'impostor').map(p => p.id));
 }
 
 function assignTasks(room) {
@@ -516,6 +538,7 @@ io.on('connection', (socket) => {
         tasks: player.tasks,
         players: [...room.players.values()].map(p => ({
           id: p.id, name: p.name, color: p.color, hat: p.hat, outfit: p.outfit, avatar: p.avatar, x: p.x, y: p.y, alive: true,
+          killCooldown: p.role === 'impostor' ? p.killCooldown : undefined,
         })),
         otherImpostors: player.role === 'impostor' ? otherImpostors : [],
         settings: room.settings,
@@ -784,6 +807,41 @@ io.on('connection', (socket) => {
     socket.to(roomCode).emit('avatarChanged', {
       playerId: socket.id, avatar: player.avatar,
     });
+  });
+
+  // --- CHANGE COLOR ---
+  socket.on('changeColor', ({ color }) => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    const room = rooms.get(roomCode);
+    if (!room || room.phase !== 'lobby') return;
+    const player = room.players.get(socket.id);
+    if (!player) return;
+    if (!COLORS.includes(color)) return;
+    // Check color not taken
+    const taken = [...room.players.values()].some(p => p.id !== socket.id && p.color === color);
+    if (taken) return;
+    player.color = color;
+    io.to(roomCode).emit('colorChanged', { playerId: socket.id, color });
+  });
+
+  // --- VENT MOVE ---
+  socket.on('ventMove', ({ ventIndex }) => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    const room = rooms.get(roomCode);
+    if (!room || room.phase !== 'playing') return;
+    const player = room.players.get(socket.id);
+    if (!player || !player.alive || player.role !== 'impostor') return;
+    const vent = MAP.vents[ventIndex];
+    if (!vent) return;
+    let dest;
+    if (distance(player, vent.a) < 60) dest = vent.b;
+    else if (distance(player, vent.b) < 60) dest = vent.a;
+    else return;
+    player.x = dest.x;
+    player.y = dest.y;
+    socket.emit('ventTeleport', { x: dest.x, y: dest.y });
   });
 
   // --- DISCONNECT ---

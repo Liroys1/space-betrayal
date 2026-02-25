@@ -49,7 +49,12 @@ const MAP = {
     { x: 1030, y: 700, w: 140, h: 60 },  // Storage <-> O2
     { x: 630, y: 1000, w: 140, h: 60 },  // Electrical <-> Lower Engine
     { x: 1030, y: 1000, w: 140, h: 60 }, // Lower Engine <-> Shields
-    { x: 1250, y: 1130, w: 60, h: 90 },  // Shields <-> Kitchen
+    { x: 1230, y: 1120, w: 80, h: 110 }, // Shields <-> Kitchen
+  ],
+  vents: [
+    { a: { x: 480, y: 1050 }, b: { x: 480, y: 750 } },   // Electrical <-> Security
+    { a: { x: 850, y: 400 },  b: { x: 480, y: 430 } },   // Cafeteria <-> MedBay
+    { a: { x: 900, y: 1320 }, b: { x: 1290, y: 1310 } },  // Navigation <-> Kitchen
   ],
   emergencyButton: { x: 900, y: 425 },
   spawnPoint: { x: 900, y: 425 },
@@ -221,6 +226,7 @@ const avatarInput = document.getElementById('avatar-input');
 const avatarUploadBtn = document.getElementById('avatar-upload-btn');
 const avatarRemoveBtn = document.getElementById('avatar-remove-btn');
 const avatarLabel = document.getElementById('avatar-label');
+const colorPicker = document.getElementById('color-picker');
 
 const meetingHeader = document.getElementById('meeting-header');
 const meetingTimer = document.getElementById('meeting-timer');
@@ -265,6 +271,7 @@ function updateLobbyUI(playerList) {
     }
   });
   lobbyCount.textContent = `${playerList.length} / 10 players`;
+  buildColorPicker(playerList.map(p => p.color));
 
   if (socket.id === isHost) {
     startBtn.style.display = 'inline-block';
@@ -318,20 +325,19 @@ function drawSkinPreview() {
   c.lineWidth = 1 * s;
   c.strokeRect(cx - R - 5 * s, cy - 10 * s, 7 * s, 16 * s);
 
-  // Visor
+  // Visor (enlarged for avatar)
   const avatarImg = avatarCache.get(socket.id);
   if (avatarImg && avatarImg.complete && avatarImg.naturalWidth > 0) {
     c.save();
     c.beginPath();
-    c.ellipse(cx + 6 * s, cy - 6 * s, 9 * s, 7 * s, 0, 0, Math.PI * 2);
+    c.ellipse(cx + 5 * s, cy - 5 * s, 12 * s, 10 * s, 0, 0, Math.PI * 2);
     c.clip();
-    c.drawImage(avatarImg, cx + 6 * s - 9 * s, cy - 6 * s - 7 * s, 18 * s, 14 * s);
+    c.drawImage(avatarImg, cx + 5 * s - 12 * s, cy - 5 * s - 10 * s, 24 * s, 20 * s);
     c.restore();
-    // Visor outline
     c.strokeStyle = 'rgba(100,170,200,0.6)';
     c.lineWidth = 1;
     c.beginPath();
-    c.ellipse(cx + 6 * s, cy - 6 * s, 9 * s, 7 * s, 0, 0, Math.PI * 2);
+    c.ellipse(cx + 5 * s, cy - 5 * s, 12 * s, 10 * s, 0, 0, Math.PI * 2);
     c.stroke();
   } else {
     c.fillStyle = '#7ec8e3';
@@ -435,6 +441,32 @@ avatarRemoveBtn.addEventListener('click', () => {
   socket.emit('changeAvatar', { avatar: null });
 });
 
+// --- COLOR PICKER ---
+function buildColorPicker(takenColors) {
+  colorPicker.innerHTML = '';
+  COLORS.forEach(c => {
+    const btn = document.createElement('div');
+    const taken = takenColors.includes(c) && c !== myColor;
+    btn.style.cssText = `width:28px;height:28px;border-radius:50%;background:${c};cursor:${taken ? 'not-allowed' : 'pointer'};opacity:${taken ? '0.3' : '1'};border:${c === myColor ? '3px solid #fff' : '2px solid rgba(255,255,255,0.2)'}`;
+    if (!taken) {
+      btn.addEventListener('click', () => {
+        socket.emit('changeColor', { color: c });
+      });
+    }
+    colorPicker.appendChild(btn);
+  });
+}
+
+socket.on('colorChanged', ({ playerId, color }) => {
+  const p = lobbyPlayers_data.find(pl => pl.id === playerId);
+  if (p) p.color = color;
+  if (playerId === socket.id) myColor = color;
+  const taken = lobbyPlayers_data.map(p => p.color);
+  buildColorPicker(taken);
+  updateLobbyUI(lobbyPlayers_data);
+  drawSkinPreview();
+});
+
 function darkenColor(hex, factor) {
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
@@ -442,10 +474,10 @@ function darkenColor(hex, factor) {
   return `rgb(${Math.floor(r * factor)},${Math.floor(g * factor)},${Math.floor(b * factor)})`;
 }
 
-const HATS = ['none', 'crown', 'tophat', 'partyhat', 'chef', 'headband', 'flower', 'devil', 'halo', 'beanie', 'antenna', 'pirate'];
-const OUTFITS = ['none', 'suit', 'labcoat', 'military', 'scarf', 'cape', 'toolbelt'];
-const HAT_NAMES = { none: 'None', crown: 'Crown', tophat: 'Top Hat', partyhat: 'Party Hat', chef: 'Chef Hat', headband: 'Headband', flower: 'Flower', devil: 'Devil Horns', halo: 'Halo', beanie: 'Beanie', antenna: 'Antenna', pirate: 'Pirate Hat' };
-const OUTFIT_NAMES = { none: 'None', suit: 'Suit', labcoat: 'Lab Coat', military: 'Military', scarf: 'Scarf', cape: 'Cape', toolbelt: 'Tool Belt' };
+const HATS = ['none', 'crown', 'tophat', 'partyhat', 'chef', 'headband', 'flower', 'devil', 'halo', 'beanie', 'antenna', 'pirate', 'glasses', 'sunglasses', 'headphones', 'cap', 'wizard', 'cowboy', 'ninja', 'santa'];
+const OUTFITS = ['none', 'suit', 'labcoat', 'military', 'scarf', 'cape', 'toolbelt', 'astronaut', 'hoodie', 'police', 'pirate_outfit', 'ninja_outfit'];
+const HAT_NAMES = { none: 'None', crown: 'Crown', tophat: 'Top Hat', partyhat: 'Party Hat', chef: 'Chef Hat', headband: 'Headband', flower: 'Flower', devil: 'Devil Horns', halo: 'Halo', beanie: 'Beanie', antenna: 'Antenna', pirate: 'Pirate Hat', glasses: 'Glasses', sunglasses: 'Sunglasses', headphones: 'Headphones', cap: 'Cap', wizard: 'Wizard Hat', cowboy: 'Cowboy Hat', ninja: 'Ninja Mask', santa: 'Santa Hat' };
+const OUTFIT_NAMES = { none: 'None', suit: 'Suit', labcoat: 'Lab Coat', military: 'Military', scarf: 'Scarf', cape: 'Cape', toolbelt: 'Tool Belt', astronaut: 'Astronaut', hoodie: 'Hoodie', police: 'Police', pirate_outfit: 'Pirate', ninja_outfit: 'Ninja' };
 
 function drawHat(c, x, y, hatType, scale) {
   const s = scale || 1;
@@ -632,6 +664,88 @@ function drawHat(c, x, y, hatType, scale) {
       c.beginPath(); c.arc(x - 1.5 * s, y - R * 0.98, 1 * s, 0, Math.PI * 2); c.fill();
       c.beginPath(); c.arc(x + 1.5 * s, y - R * 0.98, 1 * s, 0, Math.PI * 2); c.fill();
       break;
+    case 'glasses':
+      c.strokeStyle = '#333';
+      c.lineWidth = 1.5 * s;
+      c.beginPath(); c.arc(x - 5 * s, y - R * 0.3, 4 * s, 0, Math.PI * 2); c.stroke();
+      c.beginPath(); c.arc(x + 5 * s, y - R * 0.3, 4 * s, 0, Math.PI * 2); c.stroke();
+      c.beginPath(); c.moveTo(x - 1 * s, y - R * 0.3); c.lineTo(x + 1 * s, y - R * 0.3); c.stroke();
+      c.beginPath(); c.moveTo(x - 9 * s, y - R * 0.3); c.lineTo(x - R * 0.7, y - R * 0.4); c.stroke();
+      c.beginPath(); c.moveTo(x + 9 * s, y - R * 0.3); c.lineTo(x + R * 0.7, y - R * 0.4); c.stroke();
+      break;
+    case 'sunglasses':
+      c.fillStyle = '#111';
+      c.fillRect(x - 9 * s, y - R * 0.45, 8 * s, 5 * s);
+      c.fillRect(x + 1 * s, y - R * 0.45, 8 * s, 5 * s);
+      c.strokeStyle = '#333';
+      c.lineWidth = 1.5 * s;
+      c.beginPath(); c.moveTo(x - 1 * s, y - R * 0.35); c.lineTo(x + 1 * s, y - R * 0.35); c.stroke();
+      c.beginPath(); c.moveTo(x - 9 * s, y - R * 0.35); c.lineTo(x - R * 0.7, y - R * 0.5); c.stroke();
+      c.beginPath(); c.moveTo(x + 9 * s, y - R * 0.35); c.lineTo(x + R * 0.7, y - R * 0.5); c.stroke();
+      break;
+    case 'headphones':
+      c.strokeStyle = '#333';
+      c.lineWidth = 3 * s;
+      c.beginPath(); c.arc(x, y - R * 0.5, R * 0.8, Math.PI * 1.1, Math.PI * 1.9); c.stroke();
+      c.fillStyle = '#444';
+      c.fillRect(x - R * 0.85, y - R * 0.5, 6 * s, 10 * s);
+      c.fillRect(x + R * 0.85 - 6 * s, y - R * 0.5, 6 * s, 10 * s);
+      break;
+    case 'cap':
+      c.fillStyle = '#2244aa';
+      c.beginPath();
+      c.arc(x, y - R * 0.55, R * 0.7, Math.PI, Math.PI * 2);
+      c.fill();
+      c.fillRect(x, y - R * 0.58, R * 0.9, 4 * s);
+      break;
+    case 'wizard':
+      c.fillStyle = '#4422aa';
+      c.beginPath();
+      c.moveTo(x, y - R * 1.8);
+      c.lineTo(x - R * 0.6, y - R * 0.55);
+      c.lineTo(x + R * 0.6, y - R * 0.55);
+      c.closePath();
+      c.fill();
+      c.fillStyle = '#ffcc00';
+      c.beginPath(); c.arc(x, y - R * 1.1, 3 * s, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#ffcc00';
+      c.beginPath(); c.arc(x - 4 * s, y - R * 0.7, 2 * s, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.arc(x + 5 * s, y - R * 0.85, 2 * s, 0, Math.PI * 2); c.fill();
+      break;
+    case 'cowboy':
+      c.fillStyle = '#8B4513';
+      c.beginPath();
+      c.ellipse(x, y - R * 0.55, R * 1.0, 4 * s, 0, 0, Math.PI * 2);
+      c.fill();
+      c.fillStyle = '#A0522D';
+      c.beginPath();
+      c.arc(x, y - R * 0.7, R * 0.5, Math.PI, Math.PI * 2);
+      c.fill();
+      c.fillRect(x - R * 0.5, y - R * 0.7, R * 1.0, 3 * s);
+      break;
+    case 'ninja':
+      c.fillStyle = '#1a1a1a';
+      c.beginPath();
+      c.arc(x, y, R, Math.PI * 1.2, Math.PI * 1.8);
+      c.fill();
+      c.fillRect(x - R * 0.8, y - R * 0.4, R * 1.6, 5 * s);
+      c.fillStyle = '#cc0000';
+      c.fillRect(x + R * 0.6, y - R * 0.5, 10 * s, 3 * s);
+      c.fillRect(x + R * 0.6, y - R * 0.35, 12 * s, 3 * s);
+      break;
+    case 'santa':
+      c.fillStyle = '#cc0000';
+      c.beginPath();
+      c.moveTo(x - R * 0.65, y - R * 0.55);
+      c.quadraticCurveTo(x, y - R * 1.8, x + R * 0.7, y - R * 0.8);
+      c.lineTo(x + R * 0.65, y - R * 0.55);
+      c.closePath();
+      c.fill();
+      c.fillStyle = '#fff';
+      c.beginPath(); c.arc(x + R * 0.65, y - R * 0.85, 4 * s, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#fff';
+      c.fillRect(x - R * 0.7, y - R * 0.6, R * 1.4, 5 * s);
+      break;
   }
   c.restore();
 }
@@ -742,6 +856,71 @@ function drawOutfit(c, x, y, outfitType, playerColor, scale) {
       c.fillStyle = '#888';
       c.fillRect(x - R * 0.6, y + R * 0.05, R * 0.22, R * 0.15);
       break;
+    case 'astronaut':
+      // helmet ring
+      c.strokeStyle = '#ccc';
+      c.lineWidth = 2.5 * s;
+      c.beginPath(); c.arc(x, y, R * 0.85, Math.PI * 0.8, Math.PI * 2.2); c.stroke();
+      // chest pack
+      c.fillStyle = '#ddd';
+      c.fillRect(x - R * 0.3, y + R * 0.1, R * 0.6, R * 0.4);
+      c.fillStyle = '#44aaff';
+      c.fillRect(x - R * 0.15, y + R * 0.15, R * 0.3, R * 0.15);
+      break;
+    case 'hoodie':
+      // hood behind head
+      c.fillStyle = '#555';
+      c.beginPath();
+      c.arc(x, y - R * 0.1, R * 0.9, Math.PI * 1.15, Math.PI * 1.85);
+      c.fill();
+      // strings
+      c.strokeStyle = '#777';
+      c.lineWidth = 1 * s;
+      c.beginPath(); c.moveTo(x - 3 * s, y + R * 0.2); c.lineTo(x - 3 * s, y + R * 0.6); c.stroke();
+      c.beginPath(); c.moveTo(x + 3 * s, y + R * 0.2); c.lineTo(x + 3 * s, y + R * 0.6); c.stroke();
+      break;
+    case 'police':
+      // badge
+      c.fillStyle = '#ffd700';
+      c.beginPath();
+      c.moveTo(x, y - R * 0.1);
+      c.lineTo(x - 5 * s, y + R * 0.15);
+      c.lineTo(x - 3 * s, y + R * 0.3);
+      c.lineTo(x, y + R * 0.2);
+      c.lineTo(x + 3 * s, y + R * 0.3);
+      c.lineTo(x + 5 * s, y + R * 0.15);
+      c.closePath();
+      c.fill();
+      // shoulder pads
+      c.fillStyle = '#223388';
+      c.fillRect(x - R * 0.9, y - R * 0.3, R * 0.25, R * 0.3);
+      c.fillRect(x + R * 0.65, y - R * 0.3, R * 0.25, R * 0.3);
+      break;
+    case 'pirate_outfit':
+      // eyepatch
+      c.fillStyle = '#1a1a1a';
+      c.beginPath(); c.arc(x + 5 * s, y - R * 0.2, 4 * s, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = '#1a1a1a';
+      c.lineWidth = 1 * s;
+      c.beginPath(); c.moveTo(x + 5 * s, y - R * 0.2); c.lineTo(x - R * 0.5, y - R * 0.6); c.stroke();
+      // sash
+      c.fillStyle = '#cc0000';
+      c.save();
+      c.translate(x, y + R * 0.1);
+      c.rotate(-0.3);
+      c.fillRect(-R * 0.6, 0, R * 1.2, R * 0.15);
+      c.restore();
+      break;
+    case 'ninja_outfit':
+      // body wrap
+      c.fillStyle = '#1a1a1a';
+      c.globalAlpha = 0.4;
+      c.beginPath(); c.arc(x, y, R * 0.85, 0, Math.PI * 2); c.fill();
+      c.globalAlpha = 1;
+      // belt
+      c.fillStyle = '#cc0000';
+      c.fillRect(x - R * 0.7, y + R * 0.15, R * 1.4, R * 0.12);
+      break;
   }
   c.restore();
 }
@@ -781,6 +960,12 @@ function isWalkable(x, y) {
 document.addEventListener('keydown', e => {
   keys[e.key.toLowerCase()] = true;
 
+  // Escape closes task screen
+  if (e.key === 'Escape' && activeTask) {
+    closeTask(false);
+    return;
+  }
+
   if (gamePhase === 'playing' && !activeTask) {
     const me = players.find(p => p.id === myId);
     if (!me) return;
@@ -800,6 +985,17 @@ document.addEventListener('keydown', e => {
         socket.emit('callEmergency');
       } else if (nearestTask && myRole === 'impostor') {
         openTask(nearestTask); // impostors can fake tasks
+      }
+    }
+    if (e.key.toLowerCase() === 'v' && myRole === 'impostor' && me.alive) {
+      // Find nearest vent
+      const VENT_RANGE = 60;
+      for (let vi = 0; vi < MAP.vents.length; vi++) {
+        const v = MAP.vents[vi];
+        if (distance(me, v.a) < VENT_RANGE || distance(me, v.b) < VENT_RANGE) {
+          socket.emit('ventMove', { ventIndex: vi });
+          break;
+        }
       }
     }
   }
@@ -827,6 +1023,16 @@ canvas.addEventListener('click', (e) => {
           if (task) openTask(task);
         }
         else if (btn.action === 'emergency') socket.emit('callEmergency');
+        else if (btn.action === 'vent') {
+          const VENT_RANGE = 60;
+          for (let vi = 0; vi < MAP.vents.length; vi++) {
+            const v = MAP.vents[vi];
+            if (distance(me, v.a) < VENT_RANGE || distance(me, v.b) < VENT_RANGE) {
+              socket.emit('ventMove', { ventIndex: vi });
+              break;
+            }
+          }
+        }
         break;
       }
     }
@@ -923,6 +1129,7 @@ function render() {
     drawSpace();
     drawMap();
     drawEmergencyButton();
+    drawVents();
     drawTaskLocations();
     drawBodies();
     drawParticles();
@@ -1673,6 +1880,39 @@ function drawEmergencyButton() {
   ctx.fillText('EMERGENCY', s.x, s.y + 28);
 }
 
+function drawVents() {
+  if (myRole !== 'impostor') return;
+  const me = players.find(p => p.id === myId);
+  if (!me || !me.alive) return;
+  const time = Date.now();
+  const VENT_RANGE = 60;
+
+  for (const vent of MAP.vents) {
+    for (const point of [vent.a, vent.b]) {
+      const s = worldToScreen(point.x, point.y);
+      const nearVent = distance(me, point) < VENT_RANGE;
+      const pulse = 0.3 + Math.sin(time * 0.004) * 0.15;
+
+      // Vent grate
+      ctx.fillStyle = nearVent ? `rgba(0,200,0,${pulse + 0.2})` : `rgba(80,80,80,${pulse})`;
+      ctx.fillRect(s.x - 15, s.y - 10, 30, 20);
+      // Grate lines
+      ctx.strokeStyle = nearVent ? 'rgba(0,255,0,0.5)' : 'rgba(40,40,40,0.8)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < 4; i++) {
+        ctx.beginPath();
+        ctx.moveTo(s.x - 12, s.y - 7 + i * 5);
+        ctx.lineTo(s.x + 12, s.y - 7 + i * 5);
+        ctx.stroke();
+      }
+      // Border
+      ctx.strokeStyle = nearVent ? '#00ff00' : '#555';
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(s.x - 15, s.y - 10, 30, 20);
+    }
+  }
+}
+
 function drawTaskLocations() {
   const me = players.find(p => p.id === myId);
   if (!me) return;
@@ -1808,20 +2048,20 @@ function drawPlayers() {
     ctx.lineWidth = 1;
     ctx.strokeRect(bpX, -10, 7 * facing, 16);
 
-    // Visor
+    // Visor (enlarged for avatar visibility)
     const pAvatar = avatarCache.get(player.id);
     if (pAvatar && pAvatar.complete && pAvatar.naturalWidth > 0) {
       ctx.save();
       ctx.beginPath();
-      ctx.ellipse(6 * facing, -6, 9, 7, 0, 0, Math.PI * 2);
+      ctx.ellipse(5 * facing, -5, 12, 10, 0, 0, Math.PI * 2);
       ctx.clip();
       ctx.scale(facing, 1);
-      ctx.drawImage(pAvatar, 6 - 9, -6 - 7, 18, 14);
+      ctx.drawImage(pAvatar, 5 - 12, -5 - 10, 24, 20);
       ctx.restore();
-      ctx.strokeStyle = 'rgba(100,170,200,0.4)';
-      ctx.lineWidth = 0.5;
+      ctx.strokeStyle = 'rgba(100,170,200,0.5)';
+      ctx.lineWidth = 0.8;
       ctx.beginPath();
-      ctx.ellipse(6 * facing, -6, 9, 7, 0, 0, Math.PI * 2);
+      ctx.ellipse(5 * facing, -5, 12, 10, 0, 0, Math.PI * 2);
       ctx.stroke();
     } else {
       ctx.fillStyle = '#7ec8e3';
@@ -2079,6 +2319,18 @@ function drawActionButtons() {
     buttons.push({ label: 'EMERGENCY', color: '#ff4444', action: 'emergency', key: 'E' });
   }
 
+  // Vent (impostor only)
+  if (myRole === 'impostor') {
+    const VENT_RANGE = 60;
+    let nearVent = false;
+    for (const v of MAP.vents) {
+      if (distance(me, v.a) < VENT_RANGE || distance(me, v.b) < VENT_RANGE) { nearVent = true; break; }
+    }
+    if (nearVent) {
+      buttons.push({ label: 'VENT', color: '#00cc00', action: 'vent', key: 'V' });
+    }
+  }
+
   // Draw bottom-right
   const btnSize = 56;
   buttons.forEach((btn, i) => {
@@ -2182,6 +2434,9 @@ function openTask(task) {
     case 'download': initDownloadTask(); break;
     case 'fuel': initFuelTask(); break;
     case 'calibrate': initCalibrateTask(); break;
+    case 'simon': initSimonTask(); break;
+    case 'unlock': initUnlockTask(); break;
+    case 'trash': initTrashTask(); break;
   }
 }
 
@@ -2193,6 +2448,9 @@ function getTaskName(type) {
     download: 'Download Data',
     fuel: 'Fuel Engines',
     calibrate: 'Calibrate Distributor',
+    simon: 'Simon Says',
+    unlock: 'Unlock Safe',
+    trash: 'Empty Trash',
   };
   return names[type] || type;
 }
@@ -2207,14 +2465,38 @@ function closeTask(completed) {
   taskScreen.classList.remove('active');
   if (taskAnimFrame) cancelAnimationFrame(taskAnimFrame);
   taskAnimFrame = null;
-  // Remove task-specific listeners
+  // Remove task-specific listeners (mouse + touch)
   taskCanvas.onmousedown = null;
   taskCanvas.onmousemove = null;
   taskCanvas.onmouseup = null;
   taskCanvas.onclick = null;
+  taskCanvas.ontouchstart = null;
+  taskCanvas.ontouchend = null;
 }
 
 taskClose.addEventListener('click', () => closeTask(false));
+// Allow tapping X on mobile
+taskClose.addEventListener('touchend', (e) => { e.preventDefault(); closeTask(false); });
+
+// --- UNIVERSAL TOUCH-TO-MOUSE ADAPTER FOR TASK CANVAS ---
+// This bridges touch events to the per-task mouse handlers so ALL tasks work on mobile
+taskCanvas.addEventListener('touchstart', (e) => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  if (taskCanvas.onmousedown) taskCanvas.onmousedown({ clientX: touch.clientX, clientY: touch.clientY });
+}, { passive: false });
+taskCanvas.addEventListener('touchmove', (e) => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  if (taskCanvas.onmousemove) taskCanvas.onmousemove({ clientX: touch.clientX, clientY: touch.clientY });
+}, { passive: false });
+taskCanvas.addEventListener('touchend', (e) => {
+  e.preventDefault();
+  const touch = e.changedTouches[0];
+  if (taskCanvas.onmouseup) taskCanvas.onmouseup({ clientX: touch.clientX, clientY: touch.clientY });
+  // Also trigger onclick for tap-based tasks (asteroids, download, calibrate, simon, unlock)
+  if (taskCanvas.onclick) taskCanvas.onclick({ clientX: touch.clientX, clientY: touch.clientY });
+}, { passive: false });
 
 // --- WIRES TASK ---
 function initWiresTask() {
@@ -2814,6 +3096,275 @@ function initCalibrateTask() {
   renderCalibrate();
 }
 
+// --- SIMON SAYS TASK ---
+function initSimonTask() {
+  const state = activeTask.state;
+  state.sequence = [];
+  state.playerSeq = [];
+  state.round = 0;
+  state.totalRounds = 3;
+  state.showing = true;
+  state.showIndex = 0;
+  state.done = false;
+  state.colors = ['#ff4444', '#44ff44', '#4444ff', '#ffff44'];
+  state.flash = -1;
+  state.failed = false;
+
+  function nextRound() {
+    state.round++;
+    state.sequence.push(Math.floor(Math.random() * 4));
+    state.playerSeq = [];
+    state.showing = true;
+    state.showIndex = 0;
+    showSequence();
+  }
+
+  function showSequence() {
+    if (state.showIndex >= state.sequence.length) {
+      state.showing = false;
+      state.flash = -1;
+      return;
+    }
+    state.flash = state.sequence[state.showIndex];
+    setTimeout(() => {
+      state.flash = -1;
+      state.showIndex++;
+      setTimeout(() => showSequence(), 200);
+    }, 500);
+  }
+
+  function renderSimon() {
+    const tc = taskCtx;
+    tc.fillStyle = '#1a1a2e';
+    tc.fillRect(0, 0, 350, 250);
+    tc.fillStyle = '#fff';
+    tc.font = 'bold 14px Arial';
+    tc.textAlign = 'center';
+    tc.fillText(`Round ${state.round} / ${state.totalRounds}`, 175, 25);
+
+    const btnW = 70, btnH = 70, gap = 15;
+    const startX = 175 - btnW - gap / 2, startY = 50;
+    for (let i = 0; i < 4; i++) {
+      const col = Math.floor(i % 2), row = Math.floor(i / 2);
+      const bx = startX + col * (btnW + gap), by = startY + row * (btnH + gap);
+      tc.fillStyle = i === state.flash ? '#ffffff' : state.colors[i];
+      tc.globalAlpha = i === state.flash ? 1 : 0.6;
+      tc.fillRect(bx, by, btnW, btnH);
+      tc.globalAlpha = 1;
+      tc.strokeStyle = '#fff';
+      tc.lineWidth = 2;
+      tc.strokeRect(bx, by, btnW, btnH);
+      // Store hitbox
+      if (!state.btns) state.btns = [];
+      state.btns[i] = { x: bx, y: by, w: btnW, h: btnH };
+    }
+    if (state.failed) {
+      tc.fillStyle = 'rgba(255,0,0,0.3)';
+      tc.fillRect(0, 0, 350, 250);
+    }
+    if (!state.done) taskAnimFrame = requestAnimationFrame(renderSimon);
+  }
+
+  taskCanvas.onclick = (e) => {
+    if (state.showing || state.done) return;
+    const rect = taskCanvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (350 / rect.width);
+    const my = (e.clientY - rect.top) * (250 / rect.height);
+    for (let i = 0; i < 4; i++) {
+      const b = state.btns[i];
+      if (mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) {
+        state.flash = i;
+        setTimeout(() => { state.flash = -1; }, 200);
+        if (state.sequence[state.playerSeq.length] === i) {
+          state.playerSeq.push(i);
+          if (state.playerSeq.length === state.sequence.length) {
+            if (state.round >= state.totalRounds) {
+              state.done = true;
+              setTimeout(() => closeTask(true), 500);
+            } else {
+              setTimeout(() => nextRound(), 600);
+            }
+          }
+        } else {
+          state.failed = true;
+          state.playerSeq = [];
+          setTimeout(() => { state.failed = false; state.showing = true; state.showIndex = 0; showSequence(); }, 800);
+        }
+        break;
+      }
+    }
+  };
+
+  nextRound();
+  renderSimon();
+}
+
+// --- UNLOCK SAFE TASK ---
+function initUnlockTask() {
+  const state = activeTask.state;
+  state.combo = [Math.floor(Math.random() * 10), Math.floor(Math.random() * 10), Math.floor(Math.random() * 10)];
+  state.current = 0;
+  state.dialAngle = 0;
+  state.selectedNum = 0;
+  state.done = false;
+  state.confirmed = [];
+  state.dragging = false;
+
+  function renderUnlock() {
+    const tc = taskCtx;
+    tc.fillStyle = '#1a1a2e';
+    tc.fillRect(0, 0, 350, 250);
+
+    // Safe door
+    tc.fillStyle = '#444';
+    tc.fillRect(50, 20, 250, 210);
+    tc.strokeStyle = '#666';
+    tc.lineWidth = 3;
+    tc.strokeRect(50, 20, 250, 210);
+
+    // Combo display
+    tc.fillStyle = '#fff';
+    tc.font = 'bold 14px Arial';
+    tc.textAlign = 'center';
+    tc.fillText(`Code: ${state.combo.join(' - ')}`, 175, 45);
+    tc.fillText(`Turn dial to: ${state.combo[state.current]}`, 175, 65);
+
+    // Dial
+    const cx = 175, cy = 145, r = 55;
+    tc.fillStyle = '#222';
+    tc.beginPath(); tc.arc(cx, cy, r, 0, Math.PI * 2); tc.fill();
+    tc.strokeStyle = '#888';
+    tc.lineWidth = 2;
+    tc.stroke();
+
+    // Numbers around dial
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+      const nx = cx + Math.cos(a) * (r - 12);
+      const ny = cy + Math.sin(a) * (r - 12);
+      tc.fillStyle = i === state.combo[state.current] ? '#ffcc00' : '#aaa';
+      tc.font = 'bold 12px Arial';
+      tc.fillText(String(i), nx, ny + 4);
+    }
+
+    // Dial pointer
+    const pa = (state.selectedNum / 10) * Math.PI * 2 - Math.PI / 2;
+    tc.strokeStyle = '#ff4444';
+    tc.lineWidth = 3;
+    tc.beginPath();
+    tc.moveTo(cx, cy);
+    tc.lineTo(cx + Math.cos(pa) * (r - 20), cy + Math.sin(pa) * (r - 20));
+    tc.stroke();
+
+    // Confirmed
+    tc.fillStyle = '#0f0';
+    tc.font = '12px Arial';
+    tc.fillText(`Unlocked: ${state.confirmed.join(', ') || 'none'}`, 175, 230);
+
+    if (!state.done) taskAnimFrame = requestAnimationFrame(renderUnlock);
+  }
+
+  taskCanvas.onclick = (e) => {
+    if (state.done) return;
+    const rect = taskCanvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (350 / rect.width);
+    const my = (e.clientY - rect.top) * (250 / rect.height);
+    const cx = 175, cy = 145;
+    const angle = Math.atan2(my - cy, mx - cx) + Math.PI / 2;
+    let num = Math.round(((angle < 0 ? angle + Math.PI * 2 : angle) / (Math.PI * 2)) * 10) % 10;
+    state.selectedNum = num;
+
+    if (num === state.combo[state.current]) {
+      state.confirmed.push(num);
+      state.current++;
+      if (state.current >= state.combo.length) {
+        state.done = true;
+        setTimeout(() => closeTask(true), 500);
+      }
+    }
+  };
+
+  renderUnlock();
+}
+
+// --- EMPTY TRASH TASK ---
+function initTrashTask() {
+  const state = activeTask.state;
+  state.holding = false;
+  state.progress = 0;
+  state.done = false;
+  state.lastTime = Date.now();
+
+  function renderTrash() {
+    const tc = taskCtx;
+    const now = Date.now();
+    const dt = (now - state.lastTime) / 1000;
+    state.lastTime = now;
+
+    if (state.holding && !state.done) {
+      state.progress = Math.min(1, state.progress + dt / 3);
+      if (state.progress >= 1) {
+        state.done = true;
+        setTimeout(() => closeTask(true), 300);
+      }
+    }
+
+    tc.fillStyle = '#1a1a2e';
+    tc.fillRect(0, 0, 350, 250);
+
+    // Trash chute
+    tc.fillStyle = '#555';
+    tc.fillRect(125, 30, 100, 160);
+    tc.strokeStyle = '#777';
+    tc.lineWidth = 2;
+    tc.strokeRect(125, 30, 100, 160);
+
+    // Trash inside (decreases as progress increases)
+    const trashH = 120 * (1 - state.progress);
+    tc.fillStyle = '#8B4513';
+    tc.fillRect(130, 30 + 155 - trashH, 90, trashH);
+    // Trash bits
+    if (trashH > 10) {
+      tc.fillStyle = '#666';
+      tc.fillRect(140, 30 + 155 - trashH + 5, 15, 10);
+      tc.fillStyle = '#999';
+      tc.fillRect(165, 30 + 155 - trashH + 15, 20, 8);
+      tc.fillStyle = '#777';
+      tc.fillRect(145, 30 + 155 - trashH + 30, 12, 12);
+    }
+
+    // Lever
+    const leverY = 200;
+    const leverPulled = state.holding;
+    tc.fillStyle = '#888';
+    tc.fillRect(260, leverY - (leverPulled ? 40 : 0), 20, 50);
+    tc.fillStyle = leverPulled ? '#ff4444' : '#cc0000';
+    tc.beginPath();
+    tc.arc(270, leverY - (leverPulled ? 40 : 0), 15, 0, Math.PI * 2);
+    tc.fill();
+
+    // Progress bar
+    tc.fillStyle = '#333';
+    tc.fillRect(50, 220, 250, 15);
+    tc.fillStyle = '#44cc44';
+    tc.fillRect(50, 220, 250 * state.progress, 15);
+    tc.strokeStyle = '#666';
+    tc.strokeRect(50, 220, 250, 15);
+
+    tc.fillStyle = '#fff';
+    tc.font = '12px Arial';
+    tc.textAlign = 'center';
+    tc.fillText(state.done ? 'Done!' : 'Hold lever to empty trash', 175, 15);
+
+    if (!state.done) taskAnimFrame = requestAnimationFrame(renderTrash);
+  }
+
+  taskCanvas.onmousedown = () => { state.holding = true; };
+  taskCanvas.onmouseup = () => { state.holding = false; };
+
+  renderTrash();
+}
+
 // ============================================
 // MEETING UI
 // ============================================
@@ -2950,13 +3501,18 @@ socket.on('avatarChanged', ({ playerId, avatar }) => {
   cacheAvatar(playerId, avatar);
 });
 
+socket.on('ventTeleport', ({ x, y }) => {
+  const me = players.find(p => p.id === myId);
+  if (me) { me.x = x; me.y = y; }
+  spawnParticle(x, y, 'spark');
+});
+
 socket.on('playerLeft', ({ playerId }) => {
-  // Remove from lobby list
-  const items = lobbyPlayers.querySelectorAll('li');
   lobbyPlayers_data = lobbyPlayers_data.filter(p => p.id !== playerId);
   avatarCache.delete(playerId);
-  // We can't easily identify by id in the DOM, so just refresh count
-  lobbyCount.textContent = `Players in lobby`;
+  if (gamePhase === 'lobby') {
+    updateLobbyUI(lobbyPlayers_data);
+  }
 });
 
 socket.on('hostChanged', ({ hostId }) => {
@@ -3304,6 +3860,19 @@ function updateMobileActionButtons() {
     btns.push({ label: 'EMERGENCY', bg: '#cc2222', action: () => socket.emit('callEmergency') });
   }
 
+  // Vent (impostor only)
+  if (myRole === 'impostor') {
+    const VENT_RANGE = 60;
+    for (let vi = 0; vi < MAP.vents.length; vi++) {
+      const v = MAP.vents[vi];
+      if (distance(me, v.a) < VENT_RANGE || distance(me, v.b) < VENT_RANGE) {
+        const ventIdx = vi;
+        btns.push({ label: 'VENT', bg: '#00aa00', action: () => socket.emit('ventMove', { ventIndex: ventIdx }) });
+        break;
+      }
+    }
+  }
+
   // Only rebuild if changed
   const currentLabels = [...mobileActions.children].map(c => c.textContent).join(',');
   const newLabels = btns.map(b => b.label).join(',');
@@ -3530,3 +4099,26 @@ closeTask = function(completed) {
   if (completed) playSound('task');
   _origCloseTask(completed);
 };
+
+// ============================================
+// MOBILE LIFECYCLE & RECONNECTION
+// ============================================
+// Prevent disconnection when app is minimized on mobile
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    if (socket.disconnected) socket.connect();
+  }
+});
+
+// Safety: if activeTask got stuck (task panel hidden but activeTask not null), clear it
+setInterval(() => {
+  if (activeTask && !taskScreen.classList.contains('active')) {
+    activeTask = null;
+    if (taskAnimFrame) cancelAnimationFrame(taskAnimFrame);
+    taskAnimFrame = null;
+    taskCanvas.onmousedown = null;
+    taskCanvas.onmousemove = null;
+    taskCanvas.onmouseup = null;
+    taskCanvas.onclick = null;
+  }
+}, 1000);
