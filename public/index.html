@@ -6,6 +6,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap" rel="stylesheet">
   <title>Space Betrayal</title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#1a1a3e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Space Betrayal">
+  <link rel="apple-touch-icon" href="/icon-192.png">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: #0a0a1a; overflow: hidden; font-family: 'Exo 2', 'Segoe UI', Arial, sans-serif; color: #fff; touch-action: none; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
@@ -262,6 +268,16 @@
       user-select: none; -webkit-user-select: none;
     }
 
+    /* RTL adjustments */
+    [dir="rtl"] .chat-messages .chat-name { margin-right: 0; margin-left: 6px; }
+    [dir="rtl"] .setting-row { direction: rtl; }
+    [dir="rtl"] .player-list li { direction: rtl; }
+    [dir="rtl"] .chat-input-row { direction: rtl; }
+    [dir="rtl"] .skin-row { direction: rtl; }
+    [dir="rtl"] .role-list li { direction: rtl; }
+    [dir="rtl"] .host-badge { margin-right: auto; margin-left: 0; }
+    [dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3 { direction: rtl; }
+
     @media (max-width: 768px) {
       .panel { min-width: unset; width: 92vw; max-width: 400px; padding: 20px 15px; }
       .panel, .meeting-panel, .gameover-panel, .task-panel { max-height: 90vh; overflow-y: auto; }
@@ -300,6 +316,16 @@
         <button class="btn" id="browse-btn" style="font-size:0.85em;padding:6px 14px">Browse Rooms</button>
         <button class="btn" id="stats-btn" style="font-size:0.85em;padding:6px 14px">Stats</button>
         <button class="btn" id="achieve-btn" style="font-size:0.85em;padding:6px 14px">Achievements</button>
+        <button class="btn" id="challenges-btn" style="font-size:0.85em;padding:6px 14px">Challenges</button>
+        <button class="btn" id="friends-btn" style="font-size:0.85em;padding:6px 14px">Friends</button>
+      </div>
+      <button class="btn" id="lang-btn" style="margin-top:10px;font-size:0.85em;padding:6px 14px">עברית / EN</button>
+      <button class="btn" id="install-btn" style="display:none;margin-top:10px;font-size:0.85em;padding:8px 18px;background:#226622;border-color:#33aa33">Install App</button>
+      <div id="ios-install-hint" style="display:none;margin-top:8px;font-size:0.75em;color:#aaa;background:rgba(0,0,0,0.3);border-radius:6px;padding:6px 10px">Tap <strong style="color:#fff">Share</strong> then <strong style="color:#fff">Add to Home Screen</strong> to install</div>
+      <div id="volume-controls" style="margin-top:14px;background:rgba(0,0,0,0.3);border-radius:8px;padding:10px 14px;font-size:0.8em">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><label style="width:55px;color:#aaa">Master</label><input type="range" id="vol-master" min="0" max="100" value="70" style="flex:1;accent-color:#6644cc"></div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><label style="width:55px;color:#aaa">SFX</label><input type="range" id="vol-sfx" min="0" max="100" value="80" style="flex:1;accent-color:#6644cc"></div>
+        <div style="display:flex;align-items:center;gap:8px"><label style="width:55px;color:#aaa">Music</label><input type="range" id="vol-music" min="0" max="100" value="40" style="flex:1;accent-color:#6644cc"></div>
       </div>
     </div>
   </div>
@@ -330,6 +356,35 @@
       <h2>ACHIEVEMENTS</h2>
       <div id="achieve-content" style="text-align:left;font-size:0.85em;max-height:400px;overflow-y:auto"></div>
       <button class="btn" id="achieve-close" style="margin-top:12px">Close</button>
+    </div>
+  </div>
+
+  <!-- FRIENDS PANEL -->
+  <div id="friends-panel" class="overlay">
+    <div class="panel" style="max-width:380px">
+      <h2 id="friends-title">FRIENDS</h2>
+      <div style="margin-bottom:10px">
+        <span style="color:#aaa;font-size:0.85em" id="friends-your-code-label">Your Code:</span>
+        <span id="friends-my-code" style="font-size:1.3em;color:#ffdd44;letter-spacing:3px;font-weight:bold;margin-left:6px"></span>
+      </div>
+      <div style="display:flex;gap:6px;margin-bottom:12px">
+        <input type="text" id="friend-code-input" placeholder="Friend code" maxlength="6" style="flex:1;text-transform:uppercase;font-size:0.9em;padding:8px">
+        <button class="btn" id="friend-add-btn" style="font-size:0.85em;padding:6px 14px">Add</button>
+      </div>
+      <div id="friends-list" style="text-align:left;max-height:250px;overflow-y:auto;font-size:0.9em"></div>
+      <button class="btn" id="friends-close" style="margin-top:12px">Close</button>
+    </div>
+  </div>
+
+  <!-- CHALLENGES PANEL -->
+  <div id="challenges-panel" class="overlay">
+    <div class="panel" style="max-width:400px">
+      <h2 id="challenges-title">DAILY CHALLENGES</h2>
+      <div id="challenges-stars" style="font-size:1.1em;color:#ffcc00;margin-bottom:8px"></div>
+      <div id="challenges-streak" style="font-size:0.85em;color:#aaa;margin-bottom:12px"></div>
+      <div id="challenges-list" style="text-align:left;font-size:0.9em"></div>
+      <div id="challenges-bonus" style="display:none;margin-top:10px;color:#44ff44;font-weight:bold;font-size:0.9em"></div>
+      <button class="btn" id="challenges-close" style="margin-top:12px">Close</button>
     </div>
   </div>
 
@@ -393,6 +448,7 @@
         <div class="setting-row"><label>Anonymous Votes:</label><select id="set-anonvotes"><option value="0" selected>Off</option><option value="1">On</option></select></div>
         <div class="setting-row"><label>Special Roles:</label><select id="set-specialroles"><option value="0" selected>Off</option><option value="1">On</option></select></div>
         <div class="setting-row"><label>Map:</label><select id="set-map"><option value="alpha" selected>The Skeld</option><option value="beta">Space Station Beta</option></select></div>
+        <div class="setting-row"><label>Game Mode:</label><select id="set-gamemode"><option value="classic" selected>Classic</option><option value="hideseek">Hide & Seek</option><option value="speedrun">Speed Run</option><option value="infection">Infection</option></select></div>
         <div class="setting-row"><label>Public Room:</label><button class="btn" id="toggle-public-btn" style="font-size:0.8em;padding:3px 10px">Make Public</button></div>
       </div>
 
@@ -409,6 +465,19 @@
       <p id="meeting-phase-label" style="color:#aaa;margin-bottom:10px"></p>
       <div class="vote-grid" id="vote-grid"></div>
       <button class="btn" id="skip-btn" style="margin-top:10px">Skip Vote</button>
+      <div class="meeting-draw" style="margin-top:10px;border-top:1px solid #333;padding-top:8px">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap;justify-content:center">
+          <span style="font-size:0.8em;color:#aaa" id="draw-label">Draw:</span>
+          <div class="draw-color-btn" data-color="#ffffff" style="width:22px;height:22px;border-radius:50%;background:#ffffff;border:2px solid #555;cursor:pointer"></div>
+          <div class="draw-color-btn" data-color="#ff4444" style="width:22px;height:22px;border-radius:50%;background:#ff4444;border:2px solid #555;cursor:pointer"></div>
+          <div class="draw-color-btn" data-color="#44ff44" style="width:22px;height:22px;border-radius:50%;background:#44ff44;border:2px solid #555;cursor:pointer"></div>
+          <div class="draw-color-btn" data-color="#4488ff" style="width:22px;height:22px;border-radius:50%;background:#4488ff;border:2px solid #555;cursor:pointer"></div>
+          <div class="draw-color-btn" data-color="#ffdd44" style="width:22px;height:22px;border-radius:50%;background:#ffdd44;border:2px solid #555;cursor:pointer"></div>
+          <button class="btn" id="draw-eraser" style="font-size:0.7em;padding:3px 8px">Eraser</button>
+          <button class="btn" id="draw-clear" style="font-size:0.7em;padding:3px 8px">Clear</button>
+        </div>
+        <canvas id="meeting-draw-canvas" width="300" height="150" style="display:block;margin:0 auto;border-radius:6px;background:#1a1a2e;border:1px solid #333;touch-action:none;cursor:crosshair"></canvas>
+      </div>
       <div class="meeting-chat">
         <div class="chat-messages" id="chat-messages"></div>
         <div class="chat-input-row">
@@ -435,8 +504,27 @@
       <div class="win-reason" id="win-reason"></div>
       <ul class="role-list" id="role-list"></ul>
       <div id="gameover-wait" style="display:none;margin-top:15px;color:#aaa;font-size:14px">Waiting for host to start next round...</div>
+      <button class="btn" id="replay-btn" style="margin-top:12px;background:#2266bb" data-i18n="watchReplay">Watch Replay</button>
       <button class="btn primary" id="lobby-btn" style="display:none;margin-top:20px">Back to Lobby</button>
       <button class="btn" id="leave-btn" style="display:none;margin-top:10px;background:#666">Leave Room</button>
+    </div>
+  </div>
+
+  <!-- REPLAY VIEWER -->
+  <div id="replay-screen" class="overlay" style="display:none">
+    <div style="position:absolute;top:0;left:0;width:100%;height:100%;background:#111">
+      <canvas id="replay-canvas" style="width:100%;height:calc(100% - 60px);display:block"></canvas>
+      <div id="replay-controls" style="position:absolute;bottom:0;left:0;right:0;height:60px;background:#222;display:flex;align-items:center;padding:0 12px;gap:8px">
+        <button id="replay-play" class="btn" style="padding:4px 12px;font-size:14px;min-width:50px">&#9654;</button>
+        <span id="replay-time" style="color:#ccc;font-size:12px;min-width:70px">0:00/0:00</span>
+        <input type="range" id="replay-slider" min="0" max="1000" value="0" style="flex:1;cursor:pointer">
+        <select id="replay-speed" style="background:#333;color:#fff;border:1px solid #555;padding:2px 6px;font-size:12px">
+          <option value="1">1x</option>
+          <option value="2">2x</option>
+          <option value="4">4x</option>
+        </select>
+        <button id="replay-close" class="btn" style="padding:4px 12px;font-size:12px;background:#c44">&#10005;</button>
+      </div>
     </div>
   </div>
 
@@ -458,7 +546,44 @@
 
   <button id="voice-btn" style="position:fixed;top:10px;right:10px;z-index:9000;padding:6px 14px;border:2px solid #555;border-radius:8px;color:#fff;font-family:'Exo 2',Arial;font-size:0.8em;cursor:pointer;background:#444;display:none">Voice Off</button>
 
+  <script>
+    // Service Worker Registration
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+
+    // PWA Install Prompt
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const btn = document.getElementById('install-btn');
+      if (btn) btn.style.display = 'inline-block';
+    });
+    document.addEventListener('click', (e) => {
+      if (e.target.id === 'install-btn' && deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+        e.target.style.display = 'none';
+      }
+    });
+    window.addEventListener('appinstalled', () => {
+      const btn = document.getElementById('install-btn');
+      if (btn) btn.style.display = 'none';
+      deferredPrompt = null;
+    });
+
+    // iOS detection — show manual install hint
+    if (/iPad|iPhone|iPod/.test(navigator.userAgent) && !navigator.standalone && !window.matchMedia('(display-mode: standalone)').matches) {
+      const hint = document.getElementById('ios-install-hint');
+      if (hint) hint.style.display = 'block';
+    }
+  </script>
   <script src="/socket.io/socket.io.js"></script>
+  <script src="lang.js"></script>
+  <script src="sounds.js"></script>
   <script src="game.js"></script>
 </body>
 </html>

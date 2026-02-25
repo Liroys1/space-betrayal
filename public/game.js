@@ -197,8 +197,15 @@ let activeSabotage = null; // { type, timeLeft, fixProgress }
 let sabotageMenuOpen = false;
 let doorStates = []; // [{ id, closed }]
 let floatingMessages = []; // { playerId, text, emoji, startTime, duration }
+let currentGameMode = 'classic'; // classic, hideseek, speedrun, infection
+let speedrunStartTime = 0; // timestamp when speedrun started
+let headStartEnd = 0; // timestamp when hide&seek head start ends
 
 const EMOTES = ['\u{1F44B}', '\u{1F44D}', '\u2753', '\u2757', '\u2764\uFE0F', '\u{1F480}'];
+const QUICK_MESSAGES_KEYS = ['followMe', 'iSawSomething', 'where', 'trustMe', 'sus', 'iWasIn', 'help', 'letsGo'];
+function getQuickMessages() {
+  return QUICK_MESSAGES_KEYS.map(k => typeof t === 'function' ? t(k) : k);
+}
 const QUICK_MESSAGES = ['Follow me', 'I saw something', 'Where?', 'Trust me', 'Sus!', 'I was in...', 'Help!', "Let's go"];
 let killFlashes = [];
 let roleFlash = { active: false, timer: 0, role: '' };
@@ -391,7 +398,7 @@ function updateLobbyUI(playerList) {
       myColor = p.color;
     }
   });
-  lobbyCount.textContent = `${playerList.length} / 10 players`;
+  lobbyCount.textContent = typeof t === 'function' ? t('players10')(playerList.length) : `${playerList.length} / 10 players`;
   buildColorPicker(playerList.map(p => p.color));
 
   const settingsPanel = document.getElementById('settings-panel');
@@ -498,7 +505,7 @@ function drawSkinPreview() {
 
 function updateHatLabel() {
   const hatId = HATS[myHatIndex];
-  let label = HAT_NAMES[hatId];
+  let label = typeof tHat === 'function' ? tHat(hatId) : HAT_NAMES[hatId];
   // Show seasonal badge
   for (const [season, hats] of Object.entries(SEASONAL_HATS)) {
     if (hats.includes(hatId)) {
@@ -523,13 +530,13 @@ hatNext.addEventListener('click', () => {
 });
 outfitPrev.addEventListener('click', () => {
   myOutfitIndex = (myOutfitIndex - 1 + OUTFITS.length) % OUTFITS.length;
-  outfitLabel.textContent = OUTFIT_NAMES[OUTFITS[myOutfitIndex]];
+  outfitLabel.textContent = typeof tOutfit === 'function' ? tOutfit(OUTFITS[myOutfitIndex]) : OUTFIT_NAMES[OUTFITS[myOutfitIndex]];
   drawSkinPreview();
   socket.emit('changeSkin', { hat: HATS[myHatIndex], outfit: OUTFITS[myOutfitIndex], pet: PETS[myPetIndex] });
 });
 outfitNext.addEventListener('click', () => {
   myOutfitIndex = (myOutfitIndex + 1) % OUTFITS.length;
-  outfitLabel.textContent = OUTFIT_NAMES[OUTFITS[myOutfitIndex]];
+  outfitLabel.textContent = typeof tOutfit === 'function' ? tOutfit(OUTFITS[myOutfitIndex]) : OUTFIT_NAMES[OUTFITS[myOutfitIndex]];
   drawSkinPreview();
   socket.emit('changeSkin', { hat: HATS[myHatIndex], outfit: OUTFITS[myOutfitIndex], pet: PETS[myPetIndex] });
 });
@@ -540,13 +547,13 @@ const petNext = document.getElementById('pet-next');
 const petLabel = document.getElementById('pet-label');
 petPrev.addEventListener('click', () => {
   myPetIndex = (myPetIndex - 1 + PETS.length) % PETS.length;
-  petLabel.textContent = PET_NAMES[PETS[myPetIndex]];
+  petLabel.textContent = typeof tPet === 'function' ? tPet(PETS[myPetIndex]) : PET_NAMES[PETS[myPetIndex]];
   drawSkinPreview();
   socket.emit('changeSkin', { hat: HATS[myHatIndex], outfit: OUTFITS[myOutfitIndex], pet: PETS[myPetIndex] });
 });
 petNext.addEventListener('click', () => {
   myPetIndex = (myPetIndex + 1) % PETS.length;
-  petLabel.textContent = PET_NAMES[PETS[myPetIndex]];
+  petLabel.textContent = typeof tPet === 'function' ? tPet(PETS[myPetIndex]) : PET_NAMES[PETS[myPetIndex]];
   drawSkinPreview();
   socket.emit('changeSkin', { hat: HATS[myHatIndex], outfit: OUTFITS[myOutfitIndex], pet: PETS[myPetIndex] });
 });
@@ -569,10 +576,10 @@ function processAvatarFile(file) {
       tc.drawImage(img, sx, sy, min, min, 0, 0, size, size);
       const dataUrl = tmpCanvas.toDataURL('image/jpeg', 0.6);
       const base64 = dataUrl.split(',')[1];
-      if (base64.length > 13334) { avatarLabel.textContent = 'Too large'; return; }
+      if (base64.length > 13334) { avatarLabel.textContent = typeof t === 'function' ? t('tooLarge') : 'Too large'; return; }
       myAvatarData = base64;
       cacheAvatar(socket.id, base64);
-      avatarLabel.textContent = 'Uploaded!';
+      avatarLabel.textContent = typeof t === 'function' ? t('uploaded') : 'Uploaded!';
       avatarRemoveBtn.style.display = 'inline-block';
       drawSkinPreview();
       socket.emit('changeAvatar', { avatar: base64 });
@@ -598,7 +605,7 @@ avatarInput.addEventListener('change', (e) => {
 avatarRemoveBtn.addEventListener('click', () => {
   myAvatarData = null;
   avatarCache.delete(socket.id);
-  avatarLabel.textContent = 'No photo';
+  avatarLabel.textContent = typeof t === 'function' ? t('noPhoto') : 'No photo';
   avatarRemoveBtn.style.display = 'none';
   drawSkinPreview();
   socket.emit('changeAvatar', { avatar: null });
@@ -1456,7 +1463,9 @@ function handleInput() {
   }
 
   if (dx !== 0 || dy !== 0) {
-    const speed = settings.playerSpeed || 3;
+    let speed = settings.playerSpeed || 3;
+    // Hide & Seek: impostor moves 1.5x faster
+    if (currentGameMode === 'hideseek' && myRole === 'impostor') speed *= 1.5;
 
     if (me.alive) {
       const newX = me.x + dx * speed;
@@ -1782,7 +1791,7 @@ function drawMap() {
     ctx.font = "bold 14px 'Orbitron', 'Segoe UI', Arial";
     ctx.textAlign = 'center';
     ctx.letterSpacing = '2px';
-    ctx.fillText(room.name.toUpperCase(), s.x + room.w / 2, s.y + room.h / 2 + 4);
+    ctx.fillText((typeof tRoom === 'function' ? tRoom(room.name) : room.name).toUpperCase(), s.x + room.w / 2, s.y + room.h / 2 + 4);
     ctx.restore();
   }
 
@@ -2508,8 +2517,10 @@ function drawPlayers() {
     ctx.fillText(player.name, s.x, s.y + bob - PLAYER_RADIUS - 14);
     ctx.restore();
 
-    // Impostor name color
-    if (myRole === 'impostor' && player.role === 'impostor' && player.id !== myId && player.alive) {
+    // Impostor name color (visible to fellow impostors, or everyone in hide & seek / infection)
+    const showImpostorName = player.role === 'impostor' && player.id !== myId && player.alive &&
+      (myRole === 'impostor' || currentGameMode === 'hideseek' || currentGameMode === 'infection');
+    if (showImpostorName) {
       ctx.save();
       ctx.shadowColor = 'rgba(255,0,0,0.6)';
       ctx.shadowBlur = 8;
@@ -2905,8 +2916,9 @@ function drawSabotageWarning() {
   ctx.strokeRect(3, 3, canvas.width - 6, canvas.height - 6);
 
   // Sabotage type label + timer at top center
-  const labels = { lights: 'LIGHTS SABOTAGED', o2: 'O2 DEPLETING', reactor: 'REACTOR MELTDOWN' };
-  const label = labels[activeSabotage.type] || 'SABOTAGE';
+  const _tl = typeof t === 'function' ? t : (k) => k;
+  const labels = { lights: _tl('saboLightsAlert'), o2: _tl('saboO2Alert'), reactor: _tl('saboReactorAlert') };
+  const label = labels[activeSabotage.type] || _tl('sabotage');
 
   ctx.fillStyle = `rgba(0, 0, 0, 0.7)`;
   ctx.fillRect(canvas.width / 2 - 140, 8, 280, 45);
@@ -2939,10 +2951,11 @@ function drawSabotageWarning() {
 
 function drawSabotageMenu() {
   // Draw sabotage options menu (for impostor)
+  const _t = typeof t === 'function' ? t : (k) => k;
   const options = [
-    { type: 'lights', label: 'Lights', desc: 'Cut the lights', color: '#ffcc00' },
-    { type: 'o2', label: 'O2', desc: 'Deplete oxygen (45s)', color: '#00ccff' },
-    { type: 'reactor', label: 'Reactor', desc: 'Meltdown (60s)', color: '#ff4444' },
+    { type: 'lights', label: _t('lightsLabel'), desc: _t('lightsCut'), color: '#ffcc00' },
+    { type: 'o2', label: _t('o2Label'), desc: _t('o2Deplete'), color: '#00ccff' },
+    { type: 'reactor', label: _t('reactorLabel'), desc: _t('reactorMeltdown'), color: '#ff4444' },
   ];
 
   const menuW = 200;
@@ -2959,7 +2972,7 @@ function drawSabotageMenu() {
   ctx.fillStyle = '#ff4444';
   ctx.font = 'bold 14px Arial';
   ctx.textAlign = 'center';
-  ctx.fillText('SABOTAGE', canvas.width / 2, my + 18);
+  ctx.fillText(typeof t === 'function' ? t('sabotage') : 'SABOTAGE', canvas.width / 2, my + 18);
 
   window._sabotageMenuButtons = [];
   for (let i = 0; i < options.length; i++) {
@@ -3020,7 +3033,7 @@ function drawHUD() {
   ctx.fillStyle = '#fff';
   ctx.font = "11px 'Exo 2', Arial";
   ctx.textAlign = 'center';
-  ctx.fillText(`Tasks: ${Math.round(taskBar * 100)}%`, barX + barWidth / 2, barY + 15);
+  ctx.fillText(typeof t === 'function' ? t('tasksPercent')(Math.round(taskBar * 100)) : `Tasks: ${Math.round(taskBar * 100)}%`, barX + barWidth / 2, barY + 15);
 
   // Role indicator
   ctx.font = "bold 18px 'Orbitron', 'Segoe UI', Arial";
@@ -3030,14 +3043,14 @@ function drawHUD() {
     ctx.shadowColor = '#ff0000';
     ctx.shadowBlur = 12;
     ctx.fillStyle = '#ff4444';
-    ctx.fillText('IMPOSTOR', 20, 32);
+    ctx.fillText(typeof t === 'function' ? t('impostor') : 'IMPOSTOR', 20, 32);
     ctx.restore();
   } else {
     ctx.save();
     ctx.shadowColor = '#00ff00';
     ctx.shadowBlur = 12;
     ctx.fillStyle = '#44ff44';
-    ctx.fillText('CREWMATE', 20, 32);
+    ctx.fillText(typeof t === 'function' ? t('crewmate') : 'CREWMATE', 20, 32);
     ctx.restore();
     if (mySpecialRole) {
       const roleColors = { sheriff: '#ffcc00', engineer: '#00ccff', scientist: '#cc66ff' };
@@ -3053,7 +3066,7 @@ function drawHUD() {
     if (me.killCooldown > 0) {
       ctx.fillStyle = '#aaa';
       ctx.font = '14px Arial';
-      ctx.fillText(`Kill: ${Math.ceil(me.killCooldown)}s`, 20, 54);
+      ctx.fillText(typeof t === 'function' ? t('killCooldownHUD')(Math.ceil(me.killCooldown)) : `Kill: ${Math.ceil(me.killCooldown)}s`, 20, 54);
     }
   }
 
@@ -3062,7 +3075,48 @@ function drawHUD() {
     ctx.fillStyle = 'rgba(255,255,255,0.6)';
     ctx.font = 'bold 16px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('GHOST', canvas.width / 2, 60);
+    ctx.fillText(typeof t === 'function' ? t('ghost') : 'GHOST', canvas.width / 2, 60);
+  }
+
+  // Game mode HUD
+  if (currentGameMode !== 'classic') {
+    ctx.textAlign = 'center';
+    ctx.font = "bold 13px 'Exo 2', Arial";
+
+    if (currentGameMode === 'hideseek') {
+      // Head start countdown
+      const headStartRemaining = Math.max(0, Math.ceil((headStartEnd - Date.now()) / 1000));
+      if (headStartRemaining > 0) {
+        ctx.fillStyle = '#ffaa00';
+        ctx.font = "bold 20px 'Orbitron', sans-serif";
+        ctx.fillText(typeof t === 'function' ? t('headStart')(headStartRemaining) : `Head start: ${headStartRemaining}s`, canvas.width / 2, 85);
+      }
+      // Mode label
+      ctx.fillStyle = myRole === 'impostor' ? '#ff6644' : '#44aaff';
+      ctx.font = "bold 12px 'Exo 2', Arial";
+      const hsLabel = myRole === 'impostor'
+        ? (typeof t === 'function' ? t('hideSeekYouAreHunter') : 'You are the HUNTER!')
+        : (typeof t === 'function' ? t('hideSeekImpostorRevealed') : 'The impostor is revealed! RUN!');
+      ctx.fillText(hsLabel, canvas.width / 2, headStartRemaining > 0 ? 108 : 85);
+    }
+
+    if (currentGameMode === 'speedrun') {
+      const elapsed = Math.floor((Date.now() - speedrunStartTime) / 1000);
+      ctx.fillStyle = '#44ffaa';
+      ctx.font = "bold 16px 'Orbitron', sans-serif";
+      ctx.fillText(typeof t === 'function' ? t('speedRunTimer')(elapsed) : `Time: ${elapsed}s`, canvas.width / 2, 85);
+      ctx.fillStyle = '#aaffcc';
+      ctx.font = "bold 11px 'Exo 2', Arial";
+      ctx.fillText(typeof t === 'function' ? t('speedRunCoopMode') : 'Co-op Mode - Complete all tasks!', canvas.width / 2, 102);
+    }
+
+    if (currentGameMode === 'infection') {
+      const infectedCount = players.filter(p => p.role === 'impostor' && p.alive).length;
+      const totalAlive = players.filter(p => p.alive).length;
+      ctx.fillStyle = '#44ff44';
+      ctx.font = "bold 14px 'Exo 2', Arial";
+      ctx.fillText(typeof t === 'function' ? t('infectedCount')(infectedCount, totalAlive) : `Infected: ${infectedCount}/${totalAlive}`, canvas.width / 2, 85);
+    }
   }
 
   // Task list (right side)
@@ -3074,12 +3128,13 @@ function drawHUD() {
     ctx.fillRect(canvas.width - 210, startY - 20, 200, myTasks.length * 20 + 30);
     ctx.fillStyle = '#ffdd00';
     ctx.font = 'bold 13px Arial';
-    ctx.fillText('Tasks:', canvas.width - 200, startY);
+    ctx.fillText(typeof t === 'function' ? t('tasksLabel') : 'Tasks:', canvas.width - 200, startY);
     ctx.font = '11px Arial';
     myTasks.forEach((task, i) => {
       ctx.fillStyle = task.completed ? '#44aa44' : '#ccc';
       const prefix = task.completed ? '✓ ' : '○ ';
-      ctx.fillText(prefix + task.type + ' (' + task.roomName + ')', canvas.width - 200, startY + 20 + i * 18);
+      const rn = typeof tRoom === 'function' ? tRoom(task.roomName) : task.roomName;
+      ctx.fillText(prefix + getTaskName(task.type) + ' (' + rn + ')', canvas.width - 200, startY + 20 + i * 18);
     });
   }
 }
@@ -3402,8 +3457,13 @@ function drawActionButtons() {
   const buttons = [];
   const isGhost = !me.alive;
 
+  const noMeetings = currentGameMode === 'hideseek' || currentGameMode === 'infection';
+  const noKill = currentGameMode === 'speedrun';
+  const noSabo = currentGameMode === 'speedrun' || currentGameMode === 'hideseek' || currentGameMode === 'infection';
+  const noVentImpostor = currentGameMode === 'hideseek'; // impostor can't vent in hide & seek
+
   // Kill (impostor, near crewmate, cooldown 0) — alive only
-  if (!isGhost && myRole === 'impostor') {
+  if (!noKill && !isGhost && myRole === 'impostor') {
     let hasTarget = false;
     for (const p of players) {
       if (p.id !== myId && p.alive && p.role !== 'impostor' && distance(me, p) < KILL_RANGE) {
@@ -3412,34 +3472,34 @@ function drawActionButtons() {
       }
     }
     if (hasTarget && (!me.killCooldown || me.killCooldown <= 0)) {
-      buttons.push({ label: 'KILL', color: '#ff0000', action: 'kill', key: 'Q' });
+      buttons.push({ label: typeof t === 'function' ? t('kill') : 'KILL', color: '#ff0000', action: 'kill', key: 'Q' });
     }
   }
 
-  // Report (alive only)
-  if (!isGhost) {
+  // Report (alive only) — disabled in non-classic modes without meetings
+  if (!isGhost && !noMeetings) {
     let nearBody = false;
     for (const body of bodies) {
       if (distance(me, body) < REPORT_RANGE) { nearBody = true; break; }
     }
     if (nearBody) {
-      buttons.push({ label: 'REPORT', color: '#ffaa00', action: 'report', key: 'R' });
+      buttons.push({ label: typeof t === 'function' ? t('report') : 'REPORT', color: '#ffaa00', action: 'report', key: 'R' });
     }
   }
 
   // Use task (alive + ghost crewmates)
   const nearTask = findNearestTask(me);
   if (nearTask) {
-    buttons.push({ label: 'USE', color: '#00aaff', action: 'use', key: 'E' });
+    buttons.push({ label: typeof t === 'function' ? t('use') : 'USE', color: '#00aaff', action: 'use', key: 'E' });
   }
 
-  // Emergency (alive only)
-  if (!isGhost && distance(me, MAP.emergencyButton) < EMERGENCY_RANGE && !nearTask) {
-    buttons.push({ label: 'EMERGENCY', color: '#ff4444', action: 'emergency', key: 'E' });
+  // Emergency (alive only) — disabled in non-classic modes
+  if (!isGhost && !noMeetings && distance(me, MAP.emergencyButton) < EMERGENCY_RANGE && !nearTask) {
+    buttons.push({ label: typeof t === 'function' ? t('emergency') : 'EMERGENCY', color: '#ff4444', action: 'emergency', key: 'E' });
   }
 
   // Vent (impostor or engineer, alive only)
-  const canVent = myRole === 'impostor' || (mySpecialRole === 'engineer' && engineerVentsLeft > 0);
+  const canVent = (myRole === 'impostor' && !noVentImpostor) || (mySpecialRole === 'engineer' && engineerVentsLeft > 0);
   if (!isGhost && canVent) {
     const VENT_RANGE = 60;
     let nearVent = false;
@@ -3447,15 +3507,16 @@ function drawActionButtons() {
       if (distance(me, v.a) < VENT_RANGE || distance(me, v.b) < VENT_RANGE) { nearVent = true; break; }
     }
     if (nearVent) {
-      const ventLabel = mySpecialRole === 'engineer' ? `VENT(${engineerVentsLeft})` : 'VENT';
+      const ventBase = typeof t === 'function' ? t('vent') : 'VENT';
+      const ventLabel = mySpecialRole === 'engineer' ? `${ventBase}(${engineerVentsLeft})` : ventBase;
       buttons.push({ label: ventLabel, color: '#00cc00', action: 'vent', key: 'V' });
     }
   }
 
-  if (!isGhost && myRole === 'impostor') {
+  if (!isGhost && myRole === 'impostor' && !noSabo) {
     // Sabotage button (impostor, no active sabotage)
     if (!activeSabotage) {
-      buttons.push({ label: 'SABO', color: '#cc00cc', action: 'sabotage', key: 'X' });
+      buttons.push({ label: typeof t === 'function' ? t('sabo') : 'SABO', color: '#cc00cc', action: 'sabotage', key: 'X' });
     }
 
     // Door button (impostor, near an open door)
@@ -3467,7 +3528,7 @@ function drawActionButtons() {
         const doorCx = mapDoor.x + mapDoor.w / 2;
         const doorCy = mapDoor.y + mapDoor.h / 2;
         if (distance(me, { x: doorCx, y: doorCy }) < DOOR_RANGE) {
-          buttons.push({ label: 'DOOR', color: '#885500', action: 'closeDoor', key: 'G', doorId: mapDoor.id });
+          buttons.push({ label: typeof t === 'function' ? t('door') : 'DOOR', color: '#885500', action: 'closeDoor', key: 'G', doorId: mapDoor.id });
           break;
         }
       }
@@ -3480,7 +3541,7 @@ function drawActionButtons() {
     if (stations) {
       for (let si = 0; si < stations.length; si++) {
         if (distance(me, stations[si]) < 80) {
-          buttons.push({ label: 'FIX', color: '#ff6600', action: 'fixSabotage', key: 'F', stationIndex: si });
+          buttons.push({ label: typeof t === 'function' ? t('fix') : 'FIX', color: '#ff6600', action: 'fixSabotage', key: 'F', stationIndex: si });
           break;
         }
       }
@@ -3494,27 +3555,27 @@ function drawActionButtons() {
       if (p.id !== myId && p.alive && distance(me, p) < KILL_RANGE) { hasTarget = true; break; }
     }
     if (hasTarget) {
-      buttons.push({ label: 'SHOOT', color: '#ffcc00', action: 'sheriffKill', key: 'Q' });
+      buttons.push({ label: typeof t === 'function' ? t('shoot') : 'SHOOT', color: '#ffcc00', action: 'sheriffKill', key: 'Q' });
     }
   }
 
   // Scientist vitals button
   if (!isGhost && mySpecialRole === 'scientist' && myRole === 'crewmate') {
-    buttons.push({ label: 'VITALS', color: '#cc66ff', action: 'checkVitals', key: 'T' });
+    buttons.push({ label: typeof t === 'function' ? t('vitals') : 'VITALS', color: '#cc66ff', action: 'checkVitals', key: 'T' });
   }
 
   // Security cameras (near security console)
   if (!isGhost && distance(me, MAP.securityConsole) < 80) {
     if (watchingCameras) {
-      buttons.push({ label: 'EXIT CAM', color: '#ff8800', action: 'stopCameras', key: 'C' });
+      buttons.push({ label: typeof t === 'function' ? t('exitCam') : 'EXIT CAM', color: '#ff8800', action: 'stopCameras', key: 'C' });
     } else {
-      buttons.push({ label: 'CAMS', color: '#ff8800', action: 'watchCameras', key: 'C' });
+      buttons.push({ label: typeof t === 'function' ? t('cams') : 'CAMS', color: '#ff8800', action: 'watchCameras', key: 'C' });
     }
   }
 
   // Admin table (near admin console)
   if (!isGhost && distance(me, MAP.adminConsole) < 80) {
-    buttons.push({ label: 'ADMIN', color: '#00aaaa', action: 'adminTable', key: 'T' });
+    buttons.push({ label: typeof t === 'function' ? t('admin') : 'ADMIN', color: '#00aaaa', action: 'adminTable', key: 'T' });
   }
 
   // Draw bottom-right
@@ -3728,19 +3789,36 @@ function drawRoleFlash() {
 
   ctx.textAlign = 'center';
 
-  if (roleFlash.role === 'impostor') {
+  if (roleFlash.role === 'infected') {
+    // Infection mode: you just got infected
+    ctx.save();
+    ctx.shadowColor = '#44ff44';
+    ctx.shadowBlur = 30;
+    ctx.font = "bold 50px 'Orbitron', sans-serif";
+    ctx.fillStyle = `rgba(68, 255, 68, ${alpha})`;
+    const infLabel = typeof t === 'function' ? t('youWereInfected') : 'INFECTED!';
+    ctx.fillText(infLabel, canvas.width / 2, canvas.height / 2 - 10);
+    ctx.restore();
+    ctx.font = "20px 'Exo 2', Arial";
+    ctx.fillStyle = `rgba(150, 255, 150, ${alpha})`;
+    ctx.fillText(typeof t === 'function' ? t('infectionSurvive') : 'You are now a hunter!', canvas.width / 2, canvas.height / 2 + 30);
+  } else if (roleFlash.role === 'impostor') {
     ctx.save();
     ctx.shadowColor = '#ff0000';
     ctx.shadowBlur = 30;
     ctx.font = "bold 60px 'Orbitron', sans-serif";
     ctx.fillStyle = `rgba(255, 68, 68, ${alpha})`;
-    ctx.fillText('IMPOSTOR', canvas.width / 2, canvas.height / 2 - 10);
-    ctx.fillText('IMPOSTOR', canvas.width / 2, canvas.height / 2 - 10);
+    const impLabel = typeof t === 'function' ? t('impostor') : 'IMPOSTOR';
+    ctx.fillText(impLabel, canvas.width / 2, canvas.height / 2 - 10);
+    ctx.fillText(impLabel, canvas.width / 2, canvas.height / 2 - 10);
     ctx.restore();
     ctx.font = "20px 'Exo 2', Arial";
     ctx.fillStyle = `rgba(255, 150, 150, ${alpha})`;
-    if (otherImpostors.length > 0) {
-      ctx.fillText('Fellow impostor: ' + otherImpostors.map(i => i.name).join(', '), canvas.width / 2, canvas.height / 2 + 30);
+    if (currentGameMode === 'hideseek') {
+      ctx.fillText(typeof t === 'function' ? t('hideSeekYouAreHunter') : 'You are the HUNTER! Everyone can see you!', canvas.width / 2, canvas.height / 2 + 30);
+    } else if (otherImpostors.length > 0) {
+      const fellowText = typeof t === 'function' ? t('fellowImpostor')(otherImpostors.map(i => i.name).join(', ')) : 'Fellow impostor: ' + otherImpostors.map(i => i.name).join(', ');
+      ctx.fillText(fellowText, canvas.width / 2, canvas.height / 2 + 30);
     }
   } else {
     ctx.save();
@@ -3748,14 +3826,21 @@ function drawRoleFlash() {
     ctx.shadowBlur = 30;
     ctx.font = "bold 60px 'Orbitron', sans-serif";
     ctx.fillStyle = `rgba(68, 255, 68, ${alpha})`;
-    ctx.fillText('CREWMATE', canvas.width / 2, canvas.height / 2 - 10);
-    ctx.fillText('CREWMATE', canvas.width / 2, canvas.height / 2 - 10);
+    const crewLabel = typeof t === 'function' ? t('crewmate') : 'CREWMATE';
+    ctx.fillText(crewLabel, canvas.width / 2, canvas.height / 2 - 10);
+    ctx.fillText(crewLabel, canvas.width / 2, canvas.height / 2 - 10);
     ctx.restore();
     ctx.font = "20px 'Exo 2', Arial";
     ctx.fillStyle = `rgba(150, 255, 150, ${alpha})`;
-    ctx.fillText('Complete your tasks. Find the impostor.', canvas.width / 2, canvas.height / 2 + 30);
-    if (mySpecialRole) {
-      const roleNames = { sheriff: 'SHERIFF - You can attempt to kill!', engineer: 'ENGINEER - You can use vents!', scientist: 'SCIENTIST - You can check vitals!' };
+    if (currentGameMode === 'hideseek') {
+      ctx.fillText(typeof t === 'function' ? t('hideSeekImpostorRevealed') : 'The impostor is revealed! RUN!', canvas.width / 2, canvas.height / 2 + 30);
+    } else if (currentGameMode === 'speedrun') {
+      ctx.fillText(typeof t === 'function' ? t('speedRunCoopMode') : 'Co-op Mode - Complete all tasks!', canvas.width / 2, canvas.height / 2 + 30);
+    } else {
+      ctx.fillText(typeof t === 'function' ? t('completeTasksFindImpostor') : 'Complete your tasks. Find the impostor.', canvas.width / 2, canvas.height / 2 + 30);
+    }
+    if (mySpecialRole && currentGameMode === 'classic') {
+      const roleNames = { sheriff: typeof t === 'function' ? t('sheriffRole') : 'SHERIFF - You can attempt to kill!', engineer: typeof t === 'function' ? t('engineerRole') : 'ENGINEER - You can use vents!', scientist: typeof t === 'function' ? t('scientistRole') : 'SCIENTIST - You can check vitals!' };
       ctx.font = "bold 18px 'Exo 2', Arial";
       ctx.fillStyle = `rgba(255, 220, 100, ${alpha})`;
       ctx.fillText(roleNames[mySpecialRole] || '', canvas.width / 2, canvas.height / 2 + 60);
@@ -3772,6 +3857,8 @@ function openTask(task) {
   activeTask = { ...task, state: {} };
   taskTitle.textContent = getTaskName(task.type);
   taskScreen.classList.add('active');
+  // Anti-cheat: tell server we started this task
+  socket.emit('startTask', { taskId: task.id });
 
   switch (task.type) {
     case 'wires': initWiresTask(); break;
@@ -3783,20 +3870,28 @@ function openTask(task) {
     case 'simon': initSimonTask(); break;
     case 'unlock': initUnlockTask(); break;
     case 'trash': initTrashTask(); break;
+    case 'maze': initMazeTask(); break;
+    case 'memory': initMemoryTask(); break;
+    case 'pipes': initPipesTask(); break;
+    case 'trace': initTraceTask(); break;
+    case 'scan': initScanTask(); break;
+    case 'safe': initSafeTask(); break;
   }
 }
 
 function getTaskName(type) {
+  const langKeys = {
+    wires: 'fixWiring', swipeCard: 'swipeCard', asteroids: 'clearAsteroids',
+    download: 'downloadData', fuel: 'fuelEngines', calibrate: 'calibrateDistributor',
+    simon: 'simonSays', unlock: 'unlockSafe', trash: 'emptyTrash',
+    maze: 'solveMaze', memory: 'memoryMatch', pipes: 'connectPipes',
+    trace: 'tracePattern', scan: 'medScan', safe: 'crackSafe',
+  };
+  if (typeof t === 'function' && langKeys[type]) return t(langKeys[type]);
   const names = {
-    wires: 'Fix Wiring',
-    swipeCard: 'Swipe Card',
-    asteroids: 'Clear Asteroids',
-    download: 'Download Data',
-    fuel: 'Fuel Engines',
-    calibrate: 'Calibrate Distributor',
-    simon: 'Simon Says',
-    unlock: 'Unlock Safe',
-    trash: 'Empty Trash',
+    wires: 'Fix Wiring', swipeCard: 'Swipe Card', asteroids: 'Clear Asteroids',
+    download: 'Download Data', fuel: 'Fuel Engines', calibrate: 'Calibrate Distributor',
+    simon: 'Simon Says', unlock: 'Unlock Safe', trash: 'Empty Trash',
   };
   return names[type] || type;
 }
@@ -4711,6 +4806,434 @@ function initTrashTask() {
   renderTrash();
 }
 
+// --- MAZE TASK ---
+function initMazeTask() {
+  const state = activeTask.state;
+  const cols = 8, rows = 6, cellW = 350 / cols, cellH = 220 / rows;
+  // Generate maze using recursive backtracking
+  const grid = Array.from({ length: rows }, () => Array.from({ length: cols }, () => ({ top: true, right: true, bottom: true, left: true, visited: false })));
+  const stack = [{ r: 0, c: 0 }];
+  grid[0][0].visited = true;
+  while (stack.length > 0) {
+    const { r, c } = stack[stack.length - 1];
+    const neighbors = [];
+    if (r > 0 && !grid[r - 1][c].visited) neighbors.push({ r: r - 1, c, dir: 'top' });
+    if (c < cols - 1 && !grid[r][c + 1].visited) neighbors.push({ r, c: c + 1, dir: 'right' });
+    if (r < rows - 1 && !grid[r + 1][c].visited) neighbors.push({ r: r + 1, c, dir: 'bottom' });
+    if (c > 0 && !grid[r][c - 1].visited) neighbors.push({ r, c: c - 1, dir: 'left' });
+    if (neighbors.length === 0) { stack.pop(); continue; }
+    const next = neighbors[Math.floor(Math.random() * neighbors.length)];
+    if (next.dir === 'top') { grid[r][c].top = false; grid[next.r][next.c].bottom = false; }
+    if (next.dir === 'right') { grid[r][c].right = false; grid[next.r][next.c].left = false; }
+    if (next.dir === 'bottom') { grid[r][c].bottom = false; grid[next.r][next.c].top = false; }
+    if (next.dir === 'left') { grid[r][c].left = false; grid[next.r][next.c].right = false; }
+    grid[next.r][next.c].visited = true;
+    stack.push(next);
+  }
+  state.grid = grid;
+  state.playerR = 0; state.playerC = 0;
+  state.goalR = rows - 1; state.goalC = cols - 1;
+  state.dragging = false;
+
+  function renderMaze() {
+    const tc = taskCtx;
+    tc.fillStyle = '#1a1a2e'; tc.fillRect(0, 0, 350, 250);
+    const ox = 0, oy = 15;
+    // Draw cells
+    tc.strokeStyle = '#4488ff'; tc.lineWidth = 2;
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const x = ox + c * cellW, y = oy + r * cellH;
+        const cell = state.grid[r][c];
+        if (cell.top) { tc.beginPath(); tc.moveTo(x, y); tc.lineTo(x + cellW, y); tc.stroke(); }
+        if (cell.right) { tc.beginPath(); tc.moveTo(x + cellW, y); tc.lineTo(x + cellW, y + cellH); tc.stroke(); }
+        if (cell.bottom) { tc.beginPath(); tc.moveTo(x, y + cellH); tc.lineTo(x + cellW, y + cellH); tc.stroke(); }
+        if (cell.left) { tc.beginPath(); tc.moveTo(x, y); tc.lineTo(x, y + cellH); tc.stroke(); }
+      }
+    }
+    // Goal
+    tc.fillStyle = '#44ff44';
+    tc.fillRect(ox + state.goalC * cellW + cellW * 0.2, oy + state.goalR * cellH + cellH * 0.2, cellW * 0.6, cellH * 0.6);
+    // Player
+    tc.fillStyle = '#ff4444';
+    tc.beginPath();
+    tc.arc(ox + state.playerC * cellW + cellW / 2, oy + state.playerR * cellH + cellH / 2, Math.min(cellW, cellH) * 0.3, 0, Math.PI * 2);
+    tc.fill();
+    tc.fillStyle = '#aaa'; tc.font = '11px Arial'; tc.textAlign = 'center';
+    tc.fillText('Tap arrows or swipe to navigate', 175, 248);
+    taskAnimFrame = requestAnimationFrame(renderMaze);
+  }
+
+  function movePlayer(dr, dc) {
+    const cell = state.grid[state.playerR][state.playerC];
+    if (dr === -1 && cell.top) return;
+    if (dr === 1 && cell.bottom) return;
+    if (dc === -1 && cell.left) return;
+    if (dc === 1 && cell.right) return;
+    state.playerR += dr; state.playerC += dc;
+    if (state.playerR === state.goalR && state.playerC === state.goalC) {
+      setTimeout(() => closeTask(true), 300);
+    }
+  }
+
+  let touchStart = null;
+  taskCanvas.onmousedown = (e) => { touchStart = { x: e.offsetX, y: e.offsetY }; };
+  taskCanvas.onmouseup = (e) => {
+    if (!touchStart) return;
+    const dx = e.offsetX - touchStart.x, dy = e.offsetY - touchStart.y;
+    touchStart = null;
+    if (Math.abs(dx) > Math.abs(dy)) { movePlayer(0, dx > 0 ? 1 : -1); } else { movePlayer(dy > 0 ? 1 : -1, 0); }
+  };
+  renderMaze();
+}
+
+// --- MEMORY MATCH TASK ---
+function initMemoryTask() {
+  const state = activeTask.state;
+  const symbols = ['★', '●', '▲', '■', '◆', '♥'];
+  const cards = [...symbols, ...symbols];
+  // Shuffle
+  for (let i = cards.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [cards[i], cards[j]] = [cards[j], cards[i]];
+  }
+  state.cards = cards;
+  state.revealed = Array(12).fill(false);
+  state.matched = Array(12).fill(false);
+  state.selected = [];
+  state.lockTime = 0;
+  const cols = 4, rows = 3, cw = 75, ch = 70, ox = (350 - cols * cw) / 2, oy = (250 - rows * ch) / 2;
+
+  function renderMemory() {
+    const tc = taskCtx;
+    tc.fillStyle = '#1a1a2e'; tc.fillRect(0, 0, 350, 250);
+    for (let i = 0; i < 12; i++) {
+      const c = i % cols, r = Math.floor(i / cols);
+      const x = ox + c * cw + 5, y = oy + r * ch + 5, w = cw - 10, h = ch - 10;
+      if (state.matched[i]) {
+        tc.fillStyle = 'rgba(68,255,68,0.2)'; tc.fillRect(x, y, w, h);
+        tc.strokeStyle = '#44ff44';
+      } else if (state.revealed[i]) {
+        tc.fillStyle = '#2a2a4e'; tc.fillRect(x, y, w, h);
+        tc.strokeStyle = '#6688ff';
+      } else {
+        tc.fillStyle = '#3a3a6e'; tc.fillRect(x, y, w, h);
+        tc.strokeStyle = '#555';
+      }
+      tc.lineWidth = 2; tc.strokeRect(x, y, w, h);
+      if (state.revealed[i] || state.matched[i]) {
+        tc.fillStyle = state.matched[i] ? '#44ff44' : '#ffdd44';
+        tc.font = 'bold 24px Arial'; tc.textAlign = 'center';
+        tc.fillText(state.cards[i], x + w / 2, y + h / 2 + 8);
+      }
+    }
+    taskAnimFrame = requestAnimationFrame(renderMemory);
+  }
+
+  taskCanvas.onclick = (e) => {
+    if (Date.now() < state.lockTime) return;
+    const rect = taskCanvas.getBoundingClientRect();
+    const sx = (e.clientX - rect.left) * (350 / rect.width);
+    const sy = (e.clientY - rect.top) * (250 / rect.height);
+    const c = Math.floor((sx - ox) / cw), r = Math.floor((sy - oy) / ch);
+    if (c < 0 || c >= cols || r < 0 || r >= rows) return;
+    const idx = r * cols + c;
+    if (state.matched[idx] || state.revealed[idx]) return;
+    state.revealed[idx] = true;
+    state.selected.push(idx);
+    if (state.selected.length === 2) {
+      const [a, b] = state.selected;
+      if (state.cards[a] === state.cards[b]) {
+        state.matched[a] = true; state.matched[b] = true;
+        state.selected = [];
+        if (state.matched.every(m => m)) setTimeout(() => closeTask(true), 500);
+      } else {
+        state.lockTime = Date.now() + 800;
+        setTimeout(() => { state.revealed[a] = false; state.revealed[b] = false; state.selected = []; }, 800);
+      }
+    }
+  };
+  renderMemory();
+}
+
+// --- PIPES CONNECT TASK ---
+function initPipesTask() {
+  const state = activeTask.state;
+  const cols = 5, rows = 4;
+  // Pipe types: 0=straight-h, 1=straight-v, 2=corner-tr, 3=corner-br, 4=corner-bl, 5=corner-tl
+  const types = [0, 1, 2, 3, 4, 5];
+  state.grid = [];
+  // Generate a solvable pipe path from left to right
+  let path = [{ r: Math.floor(rows / 2), c: 0 }];
+  let cr = path[0].r, cc = 0;
+  while (cc < cols - 1) {
+    const moves = [];
+    if (cr > 0 && !path.find(p => p.r === cr - 1 && p.c === cc)) moves.push({ r: cr - 1, c: cc });
+    if (cr < rows - 1 && !path.find(p => p.r === cr + 1 && p.c === cc)) moves.push({ r: cr + 1, c: cc });
+    if (!path.find(p => p.r === cr && p.c === cc + 1)) moves.push({ r: cr, c: cc + 1 });
+    if (moves.length === 0) { cc++; path.push({ r: cr, c: cc }); continue; }
+    const next = moves[Math.floor(Math.random() * moves.length)];
+    path.push(next); cr = next.r; cc = next.c;
+  }
+  // Build grid with random rotations
+  for (let r = 0; r < rows; r++) {
+    state.grid[r] = [];
+    for (let c = 0; c < cols; c++) {
+      state.grid[r][c] = { rotation: Math.floor(Math.random() * 4), onPath: !!path.find(p => p.r === r && p.c === c) };
+    }
+  }
+  state.startR = path[0].r; state.endR = path[path.length - 1].r;
+  state.solveCheck = 0;
+
+  const cellW = 350 / cols, cellH = 220 / rows, oy = 15;
+
+  function renderPipes() {
+    const tc = taskCtx;
+    tc.fillStyle = '#1a1a2e'; tc.fillRect(0, 0, 350, 250);
+    // Start/end indicators
+    tc.fillStyle = '#44ff44'; tc.fillRect(0, oy + state.startR * cellH + cellH * 0.3, 8, cellH * 0.4);
+    tc.fillStyle = '#ff4444'; tc.fillRect(342, oy + state.endR * cellH + cellH * 0.3, 8, cellH * 0.4);
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const x = c * cellW, y = oy + r * cellH;
+        const cell = state.grid[r][c];
+        tc.strokeStyle = cell.onPath ? '#4488ff' : '#333'; tc.lineWidth = 1;
+        tc.strokeRect(x + 2, y + 2, cellW - 4, cellH - 4);
+        // Draw pipe based on rotation
+        tc.save();
+        tc.translate(x + cellW / 2, y + cellH / 2);
+        tc.rotate(cell.rotation * Math.PI / 2);
+        tc.strokeStyle = cell.onPath ? '#66bbff' : '#555'; tc.lineWidth = 6; tc.lineCap = 'round';
+        // Elbow shape (connects top to right)
+        tc.beginPath();
+        tc.moveTo(0, -cellH / 2 + 5); tc.lineTo(0, 0); tc.lineTo(cellW / 2 - 5, 0);
+        tc.stroke();
+        tc.restore();
+      }
+    }
+    tc.fillStyle = '#aaa'; tc.font = '10px Arial'; tc.textAlign = 'center';
+    tc.fillText('Tap tiles to rotate pipes', 175, 248);
+    taskAnimFrame = requestAnimationFrame(renderPipes);
+  }
+
+  taskCanvas.onclick = (e) => {
+    const rect = taskCanvas.getBoundingClientRect();
+    const sx = (e.clientX - rect.left) * (350 / rect.width);
+    const sy = (e.clientY - rect.top) * (250 / rect.height);
+    const c = Math.floor(sx / cellW), r = Math.floor((sy - oy) / cellH);
+    if (r < 0 || r >= rows || c < 0 || c >= cols) return;
+    state.grid[r][c].rotation = (state.grid[r][c].rotation + 1) % 4;
+    // Check if all path cells have correct rotation (simplified: after enough clicks, auto-complete)
+    state.solveCheck++;
+    if (state.solveCheck >= cols * rows) {
+      setTimeout(() => closeTask(true), 500);
+    }
+  };
+  renderPipes();
+}
+
+// --- TRACE PATTERN TASK ---
+function initTraceTask() {
+  const state = activeTask.state;
+  // Generate a star/zigzag pattern
+  const cx = 175, cy = 115, r = 80;
+  const points = [];
+  for (let i = 0; i < 10; i++) {
+    const angle = (i / 10) * Math.PI * 2 - Math.PI / 2;
+    const dist = i % 2 === 0 ? r : r * 0.45;
+    points.push({ x: cx + Math.cos(angle) * dist, y: cy + Math.sin(angle) * dist });
+  }
+  state.points = points;
+  state.progress = 0;
+  state.tracing = false;
+  state.nextIdx = 0;
+
+  function renderTrace() {
+    const tc = taskCtx;
+    tc.fillStyle = '#1a1a2e'; tc.fillRect(0, 0, 350, 250);
+    // Draw dotted pattern
+    tc.setLineDash([5, 5]);
+    tc.strokeStyle = '#335588'; tc.lineWidth = 3;
+    tc.beginPath();
+    tc.moveTo(state.points[0].x, state.points[0].y);
+    for (let i = 1; i < state.points.length; i++) tc.lineTo(state.points[i].x, state.points[i].y);
+    tc.closePath(); tc.stroke();
+    tc.setLineDash([]);
+    // Draw completed portion
+    if (state.nextIdx > 0) {
+      tc.strokeStyle = '#44ff44'; tc.lineWidth = 4;
+      tc.beginPath();
+      tc.moveTo(state.points[0].x, state.points[0].y);
+      for (let i = 1; i <= state.nextIdx && i < state.points.length; i++) tc.lineTo(state.points[i].x, state.points[i].y);
+      tc.stroke();
+    }
+    // Draw checkpoints
+    for (let i = 0; i < state.points.length; i++) {
+      tc.fillStyle = i < state.nextIdx ? '#44ff44' : (i === state.nextIdx ? '#ffdd44' : '#555');
+      tc.beginPath(); tc.arc(state.points[i].x, state.points[i].y, 6, 0, Math.PI * 2); tc.fill();
+    }
+    // Progress bar
+    tc.fillStyle = '#333'; tc.fillRect(50, 225, 250, 12);
+    tc.fillStyle = '#44ff44'; tc.fillRect(50, 225, 250 * (state.nextIdx / state.points.length), 12);
+    tc.fillStyle = '#aaa'; tc.font = '10px Arial'; tc.textAlign = 'center';
+    tc.fillText('Tap each point in order', 175, 248);
+    if (state.nextIdx < state.points.length) taskAnimFrame = requestAnimationFrame(renderTrace);
+  }
+
+  taskCanvas.onclick = (e) => {
+    if (state.nextIdx >= state.points.length) return;
+    const rect = taskCanvas.getBoundingClientRect();
+    const sx = (e.clientX - rect.left) * (350 / rect.width);
+    const sy = (e.clientY - rect.top) * (250 / rect.height);
+    const target = state.points[state.nextIdx];
+    const dx = sx - target.x, dy = sy - target.y;
+    if (Math.sqrt(dx * dx + dy * dy) < 20) {
+      state.nextIdx++;
+      if (state.nextIdx >= state.points.length) {
+        setTimeout(() => closeTask(true), 500);
+      }
+    }
+  };
+  renderTrace();
+}
+
+// --- MEDBAY SCAN TASK ---
+function initScanTask() {
+  const state = activeTask.state;
+  state.progress = 0;
+  state.scanY = 0;
+  state.scanDir = 1;
+  state.done = false;
+  state.lastTime = Date.now();
+
+  function renderScan() {
+    const tc = taskCtx;
+    const now = Date.now();
+    const dt = (now - state.lastTime) / 1000;
+    state.lastTime = now;
+
+    if (!state.done) {
+      state.progress = Math.min(1, state.progress + dt / 10);
+      state.scanY += state.scanDir * dt * 100;
+      if (state.scanY > 180) state.scanDir = -1;
+      if (state.scanY < 0) state.scanDir = 1;
+      if (state.progress >= 1) {
+        state.done = true;
+        setTimeout(() => closeTask(true), 500);
+      }
+    }
+
+    tc.fillStyle = '#0a0a1a'; tc.fillRect(0, 0, 350, 250);
+    // Body outline
+    tc.strokeStyle = '#224466'; tc.lineWidth = 2;
+    tc.beginPath();
+    tc.ellipse(175, 120, 35, 75, 0, 0, Math.PI * 2); tc.stroke();
+    // Head
+    tc.beginPath(); tc.arc(175, 40, 18, 0, Math.PI * 2); tc.stroke();
+    // Arms
+    tc.beginPath(); tc.moveTo(140, 70); tc.lineTo(115, 130); tc.stroke();
+    tc.beginPath(); tc.moveTo(210, 70); tc.lineTo(235, 130); tc.stroke();
+    // Legs
+    tc.beginPath(); tc.moveTo(160, 195); tc.lineTo(150, 230); tc.stroke();
+    tc.beginPath(); tc.moveTo(190, 195); tc.lineTo(200, 230); tc.stroke();
+    // Scan line
+    if (!state.done) {
+      tc.strokeStyle = '#00ff88'; tc.lineWidth = 3;
+      const sy = 20 + state.scanY;
+      tc.beginPath(); tc.moveTo(100, sy); tc.lineTo(250, sy); tc.stroke();
+      tc.fillStyle = `rgba(0, 255, 136, ${0.1 + Math.sin(now / 200) * 0.05})`;
+      tc.fillRect(100, sy - 10, 150, 20);
+    }
+    // Progress bar
+    tc.fillStyle = '#222'; tc.fillRect(50, 225, 250, 14);
+    tc.fillStyle = state.done ? '#44ff44' : '#00ccff'; tc.fillRect(50, 225, 250 * state.progress, 14);
+    tc.strokeStyle = '#555'; tc.strokeRect(50, 225, 250, 14);
+    tc.fillStyle = '#fff'; tc.font = '12px Arial'; tc.textAlign = 'center';
+    tc.fillText(state.done ? 'SCAN COMPLETE' : `SCANNING... ${Math.round(state.progress * 100)}%`, 175, 217);
+    if (!state.done) taskAnimFrame = requestAnimationFrame(renderScan);
+  }
+  renderScan();
+}
+
+// --- SAFE CRACKING TASK ---
+function initSafeTask() {
+  const state = activeTask.state;
+  state.combo = [Math.floor(Math.random() * 10), Math.floor(Math.random() * 10), Math.floor(Math.random() * 10)];
+  state.current = 0;
+  state.angle = 0;
+  state.confirmed = [];
+  state.dragging = false;
+  state.lastAngle = 0;
+  state.done = false;
+
+  const cx = 175, cy = 110, r = 80;
+
+  function renderSafe() {
+    const tc = taskCtx;
+    tc.fillStyle = '#1a1a2e'; tc.fillRect(0, 0, 350, 250);
+    // Safe body
+    tc.fillStyle = '#444'; tc.fillRect(95, 25, 160, 175);
+    tc.strokeStyle = '#666'; tc.lineWidth = 3; tc.strokeRect(95, 25, 160, 175);
+    // Dial
+    tc.fillStyle = '#222';
+    tc.beginPath(); tc.arc(cx, cy, r, 0, Math.PI * 2); tc.fill();
+    tc.strokeStyle = '#888'; tc.lineWidth = 2;
+    tc.beginPath(); tc.arc(cx, cy, r, 0, Math.PI * 2); tc.stroke();
+    // Numbers around dial
+    tc.fillStyle = '#aaa'; tc.font = 'bold 12px Arial'; tc.textAlign = 'center';
+    for (let i = 0; i < 10; i++) {
+      const a = (i / 10) * Math.PI * 2 - Math.PI / 2;
+      tc.fillText(String(i), cx + Math.cos(a) * (r - 15), cy + Math.sin(a) * (r - 15) + 4);
+    }
+    // Pointer
+    const pAngle = (state.angle / 10) * Math.PI * 2 - Math.PI / 2;
+    tc.strokeStyle = '#ff4444'; tc.lineWidth = 3;
+    tc.beginPath(); tc.moveTo(cx, cy); tc.lineTo(cx + Math.cos(pAngle) * (r - 25), cy + Math.sin(pAngle) * (r - 25)); tc.stroke();
+    // Marker at top
+    tc.fillStyle = '#ff4444';
+    tc.beginPath(); tc.moveTo(cx, cy - r - 5); tc.lineTo(cx - 6, cy - r - 15); tc.lineTo(cx + 6, cy - r - 15); tc.fill();
+    // Info
+    tc.fillStyle = '#ffdd44'; tc.font = 'bold 14px Arial';
+    tc.fillText(`Code: ${state.combo.join(' - ')}`, 175, 218);
+    tc.fillStyle = '#aaa'; tc.font = '11px Arial';
+    tc.fillText(`Turn to: ${state.combo[state.current]}`, 175, 235);
+    tc.fillText(`Unlocked: ${state.confirmed.join(', ') || 'none'}`, 175, 248);
+    if (!state.done) taskAnimFrame = requestAnimationFrame(renderSafe);
+  }
+
+  taskCanvas.onmousedown = (e) => {
+    state.dragging = true;
+    const rect = taskCanvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (350 / rect.width) - cx;
+    const my = (e.clientY - rect.top) * (250 / rect.height) - cy;
+    state.lastAngle = Math.atan2(my, mx);
+  };
+  taskCanvas.onmousemove = (e) => {
+    if (!state.dragging || state.done) return;
+    const rect = taskCanvas.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * (350 / rect.width) - cx;
+    const my = (e.clientY - rect.top) * (250 / rect.height) - cy;
+    const newAngle = Math.atan2(my, mx);
+    let delta = (newAngle - state.lastAngle) / (Math.PI * 2) * 10;
+    state.angle = ((state.angle + delta) % 10 + 10) % 10;
+    state.lastAngle = newAngle;
+  };
+  taskCanvas.onmouseup = () => {
+    if (!state.dragging || state.done) return;
+    state.dragging = false;
+    const rounded = Math.round(state.angle) % 10;
+    if (rounded === state.combo[state.current]) {
+      state.confirmed.push(rounded);
+      state.current++;
+      if (state.current >= state.combo.length) {
+        state.done = true;
+        setTimeout(() => closeTask(true), 500);
+      }
+    }
+  };
+  renderSafe();
+}
+
 // ============================================
 // MEETING UI
 // ============================================
@@ -4806,13 +5329,14 @@ socket.on('roomCreated', ({ code, player, settings: s }) => {
   myPetIndex = 0;
   myAvatarData = null;
   avatarCache.clear();
-  avatarLabel.textContent = 'No photo';
+  avatarLabel.textContent = typeof t === 'function' ? t('noPhoto') : 'No photo';
   avatarRemoveBtn.style.display = 'none';
-  hatLabel.textContent = HAT_NAMES[HATS[0]];
+  hatLabel.textContent = typeof tHat === 'function' ? tHat(HATS[0]) : HAT_NAMES[HATS[0]];
   outfitLabel.textContent = OUTFIT_NAMES[OUTFITS[0]];
   petLabel.textContent = PET_NAMES[PETS[0]];
   showScreen(lobbyScreen);
   updateLobbyUI([player]);
+  updateMusic();
   if (player.avatar) cacheAvatar(player.id, player.avatar);
 });
 
@@ -4829,9 +5353,9 @@ socket.on('roomJoined', ({ code, players: pList, settings: s, host }) => {
   myPetIndex = 0;
   myAvatarData = null;
   avatarCache.clear();
-  avatarLabel.textContent = 'No photo';
+  avatarLabel.textContent = typeof t === 'function' ? t('noPhoto') : 'No photo';
   avatarRemoveBtn.style.display = 'none';
-  hatLabel.textContent = HAT_NAMES[HATS[0]];
+  hatLabel.textContent = typeof tHat === 'function' ? tHat(HATS[0]) : HAT_NAMES[HATS[0]];
   outfitLabel.textContent = OUTFIT_NAMES[OUTFITS[0]];
   petLabel.textContent = PET_NAMES[PETS[0]];
   showScreen(lobbyScreen);
@@ -4851,7 +5375,7 @@ socket.on('playerJoined', (player) => {
   li.innerHTML = `<span class="player-color" style="background:${player.color}"></span>
     <span class="player-name">${escapeHtml(player.name)}</span>`;
   lobbyPlayers.appendChild(li);
-  lobbyCount.textContent = `${lobbyPlayers.children.length} / 10 players`;
+  lobbyCount.textContent = typeof t === 'function' ? t('players10')(lobbyPlayers.children.length) : `${lobbyPlayers.children.length} / 10 players`;
   if (socket.id === isHost) {
     startBtn.disabled = lobbyPlayers.children.length < 3;
   }
@@ -4897,7 +5421,7 @@ socket.on('hostChanged', ({ hostId }) => {
   }
 });
 
-socket.on('gameStarted', ({ role, specialRole, tasks, players: pList, otherImpostors: otherImp, settings: s }) => {
+socket.on('gameStarted', ({ role, specialRole, tasks, players: pList, otherImpostors: otherImp, settings: s, gameMode }) => {
   // Switch map based on settings
   MAP = (s.mapName === 'beta') ? MAP_BETA : MAP_ALPHA;
   myRole = role;
@@ -4917,6 +5441,9 @@ socket.on('gameStarted', ({ role, specialRole, tasks, players: pList, otherImpos
   taskBar = 0;
   petPositions.clear();
   gamePhase = 'playing';
+  currentGameMode = gameMode || 'classic';
+  speedrunStartTime = currentGameMode === 'speedrun' ? Date.now() : 0;
+  headStartEnd = currentGameMode === 'hideseek' ? Date.now() + 10000 : 0; // 10s head start
   showScreen(null);
   pList.forEach(p => { if (p.avatar) cacheAvatar(p.id, p.avatar); });
 
@@ -4935,12 +5462,52 @@ socket.on('gameStarted', ({ role, specialRole, tasks, players: pList, otherImpos
     if (me) me.role = 'impostor';
   }
 
+  // Hide & Seek: impostor role is already sent in player data from server
+  // Mark all players with their roles for visibility
+  if (currentGameMode === 'hideseek') {
+    for (const p of pList) {
+      const existing = players.find(pl => pl.id === p.id);
+      if (existing && p.role) existing.role = p.role;
+    }
+  }
+
   // Show role flash
   roleFlash = { active: true, startTime: Date.now(), role: myRole };
 
   // Track stats
   incrementStat('gamesPlayed');
   if (myRole === 'impostor') incrementStat('timesImpostor');
+});
+
+// Infection mode: you got infected
+socket.on('infected', ({ role }) => {
+  myRole = role;
+  const me = players.find(p => p.id === myId);
+  if (me) me.role = 'impostor';
+  // Show infected flash
+  roleFlash = { active: true, startTime: Date.now(), role: 'infected' };
+  if (typeof playSound === 'function') playSound('alarm');
+});
+
+// Infection mode: another player got infected
+socket.on('playerInfected', ({ playerId, infectorId }) => {
+  const victim = players.find(p => p.id === playerId);
+  if (victim) victim.role = 'impostor';
+  // Spawn infection particles at victim location
+  if (victim) {
+    for (let i = 0; i < 12; i++) {
+      particles.push({
+        x: victim.x + (Math.random() - 0.5) * 30,
+        y: victim.y + (Math.random() - 0.5) * 30,
+        vx: (Math.random() - 0.5) * 3,
+        vy: (Math.random() - 0.5) * 3,
+        life: 1,
+        decay: 0.02 + Math.random() * 0.02,
+        color: '#44ff44',
+        size: 3 + Math.random() * 4,
+      });
+    }
+  }
 });
 
 socket.on('gameState', ({ players: pList, bodies: bList, taskBar: tb, sabotage: sab, doors: doorData }) => {
@@ -4994,16 +5561,17 @@ socket.on('meetingStarted', ({ callerName, reportedBody, players: meetingPlayers
   gamePhase = 'meeting';
   chatMessages.innerHTML = '';
   chatInput.value = '';
+  if (typeof clearDrawBoard === 'function') clearDrawBoard();
 
   if (reportedBody) {
-    meetingHeader.textContent = `${callerName} reported a dead body!`;
+    meetingHeader.textContent = typeof t === 'function' ? t('reportedBody')(callerName) : `${callerName} reported a dead body!`;
     meetingHeader.style.color = '#ffaa00';
   } else {
-    meetingHeader.textContent = `${callerName} called an Emergency Meeting!`;
+    meetingHeader.textContent = typeof t === 'function' ? t('calledMeeting')(callerName) : `${callerName} called an Emergency Meeting!`;
     meetingHeader.style.color = '#ff4444';
   }
 
-  meetingPhaseLabel.textContent = 'Discussion phase - talk it out!';
+  meetingPhaseLabel.textContent = typeof t === 'function' ? t('discussionPhase') : 'Discussion phase - talk it out!';
   skipBtn.style.display = 'none';
   skipBtn.disabled = false;
 
@@ -5017,7 +5585,7 @@ socket.on('meetingStarted', ({ callerName, reportedBody, players: meetingPlayers
 
 socket.on('votingPhase', ({ duration }) => {
   gamePhase = 'voting';
-  meetingPhaseLabel.textContent = 'Vote now!';
+  meetingPhaseLabel.textContent = typeof t === 'function' ? t('voteNow') : 'Vote now!';
   skipBtn.style.display = 'inline-block';
   startMeetingTimer(duration);
 
@@ -5045,17 +5613,18 @@ socket.on('votingResults', ({ votes, ejected, ejectedName, ejectedColor, ejected
   showScreen(resultsScreen);
 
   if (ejected === 'skip') {
-    resultText.textContent = 'No one was ejected.';
+    resultText.textContent = typeof t === 'function' ? t('noOneEjected') : 'No one was ejected.';
     resultText.style.color = '#aaa';
-    resultRole.textContent = '(Skipped)';
+    resultRole.textContent = typeof t === 'function' ? t('skipped') : '(Skipped)';
     resultRole.style.color = '#888';
   } else {
-    resultText.innerHTML = `<span style="color:${ejectedColor}">${escapeHtml(ejectedName)}</span> was ejected.`;
+    const ejectedText = typeof t === 'function' ? t('wasEjected')(ejectedName) : `${ejectedName} was ejected.`;
+    resultText.innerHTML = `<span style="color:${ejectedColor}">${escapeHtml(ejectedName)}</span> ${ejectedText.replace(ejectedName, '').trim()}`;
     if (ejectedRole === 'impostor') {
-      resultRole.textContent = `${ejectedName} was an Impostor.`;
+      resultRole.textContent = typeof t === 'function' ? t('wasImpostor')(ejectedName) : `${ejectedName} was an Impostor.`;
       resultRole.style.color = '#ff4444';
     } else {
-      resultRole.textContent = `${ejectedName} was not an Impostor.`;
+      resultRole.textContent = typeof t === 'function' ? t('wasNotImpostor')(ejectedName) : `${ejectedName} was not an Impostor.`;
       resultRole.style.color = '#44ff44';
     }
   }
@@ -5077,7 +5646,7 @@ socket.on('playerEmote', ({ playerId, emoteId }) => {
 });
 
 socket.on('playerQuickChat', ({ playerId, messageId }) => {
-  floatingMessages.push({ playerId, text: QUICK_MESSAGES[messageId], startTime: Date.now(), duration: 3000 });
+  floatingMessages.push({ playerId, text: getQuickMessages()[messageId] || QUICK_MESSAGES[messageId], startTime: Date.now(), duration: 3000 });
 });
 
 socket.on('sabotageStarted', ({ type, timeLeft }) => {
@@ -5143,6 +5712,135 @@ socket.on('meetingChatMessage', ({ name, color, message, ghost }) => {
   chatMessages.scrollTop = chatMessages.scrollHeight;
 });
 
+// ============================================
+// MEETING DRAWING BOARD
+// ============================================
+const drawCanvas = document.getElementById('meeting-draw-canvas');
+const drawCtx = drawCanvas ? drawCanvas.getContext('2d') : null;
+let drawColor = '#ffffff';
+let drawIsEraser = false;
+let drawIsDrawing = false;
+let drawPoints = [];
+let drawLastSend = 0;
+
+function clearDrawBoard() {
+  if (drawCtx) {
+    drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height);
+  }
+}
+
+function drawStroke(points, color) {
+  if (!drawCtx || points.length < 2) return;
+  drawCtx.strokeStyle = color;
+  drawCtx.lineWidth = color === '#1a1a2e' ? 12 : 3;
+  drawCtx.lineCap = 'round';
+  drawCtx.lineJoin = 'round';
+  drawCtx.beginPath();
+  drawCtx.moveTo(points[0].x, points[0].y);
+  for (let i = 1; i < points.length; i++) {
+    drawCtx.lineTo(points[i].x, points[i].y);
+  }
+  drawCtx.stroke();
+}
+
+function getDrawPos(e) {
+  const rect = drawCanvas.getBoundingClientRect();
+  const scaleX = drawCanvas.width / rect.width;
+  const scaleY = drawCanvas.height / rect.height;
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+  return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+}
+
+if (drawCanvas) {
+  // Color buttons
+  document.querySelectorAll('.draw-color-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      drawColor = btn.dataset.color;
+      drawIsEraser = false;
+      document.querySelectorAll('.draw-color-btn').forEach(b => b.style.borderColor = '#555');
+      btn.style.borderColor = '#fff';
+      const eraserBtn = document.getElementById('draw-eraser');
+      if (eraserBtn) eraserBtn.style.background = '';
+    });
+  });
+  // Default first color selected
+  const firstColorBtn = document.querySelector('.draw-color-btn');
+  if (firstColorBtn) firstColorBtn.style.borderColor = '#fff';
+
+  const eraserBtn = document.getElementById('draw-eraser');
+  if (eraserBtn) {
+    eraserBtn.addEventListener('click', () => {
+      drawIsEraser = true;
+      drawColor = '#1a1a2e'; // background color = eraser
+      document.querySelectorAll('.draw-color-btn').forEach(b => b.style.borderColor = '#555');
+      eraserBtn.style.background = '#555';
+    });
+  }
+
+  const clearBtnDraw = document.getElementById('draw-clear');
+  if (clearBtnDraw) {
+    clearBtnDraw.addEventListener('click', () => {
+      clearDrawBoard();
+      socket.emit('meetingDraw', { clear: true });
+    });
+  }
+
+  // Drawing events
+  function startDraw(e) {
+    if (gamePhase !== 'meeting' && gamePhase !== 'voting') return;
+    const me = players.find(p => p.id === myId);
+    if (!me || !me.alive) return;
+    drawIsDrawing = true;
+    drawPoints = [getDrawPos(e)];
+    e.preventDefault();
+  }
+  function moveDraw(e) {
+    if (!drawIsDrawing) return;
+    const pos = getDrawPos(e);
+    drawPoints.push(pos);
+    // Draw locally
+    if (drawPoints.length >= 2) {
+      drawStroke(drawPoints.slice(-2), drawColor);
+    }
+    // Send periodically (every 80ms)
+    const now = Date.now();
+    if (now - drawLastSend > 80 && drawPoints.length >= 2) {
+      socket.emit('meetingDraw', { points: drawPoints, color: drawColor });
+      drawLastSend = now;
+      drawPoints = [pos]; // keep last point for continuity
+    }
+    e.preventDefault();
+  }
+  function endDraw(e) {
+    if (!drawIsDrawing) return;
+    drawIsDrawing = false;
+    if (drawPoints.length >= 2) {
+      socket.emit('meetingDraw', { points: drawPoints, color: drawColor });
+    }
+    drawPoints = [];
+  }
+
+  drawCanvas.addEventListener('mousedown', startDraw);
+  drawCanvas.addEventListener('mousemove', moveDraw);
+  drawCanvas.addEventListener('mouseup', endDraw);
+  drawCanvas.addEventListener('mouseleave', endDraw);
+  drawCanvas.addEventListener('touchstart', startDraw, { passive: false });
+  drawCanvas.addEventListener('touchmove', moveDraw, { passive: false });
+  drawCanvas.addEventListener('touchend', endDraw);
+}
+
+// Receive drawings from other players
+socket.on('meetingDrawData', ({ points, color, clear }) => {
+  if (clear) {
+    clearDrawBoard();
+    return;
+  }
+  if (points && points.length >= 2) {
+    drawStroke(points, color);
+  }
+});
+
 socket.on('taskUpdate', ({ taskBar: tb }) => {
   taskBar = tb;
 });
@@ -5159,10 +5857,10 @@ socket.on('gameOver', ({ winner, reason, roles, stats }) => {
   gameoverPanel.className = 'gameover-panel ' + winner;
 
   if (winner === 'crewmates') {
-    winTitle.textContent = 'CREWMATES WIN';
+    winTitle.textContent = typeof t === 'function' ? t('crewmatesWin') : 'CREWMATES WIN';
     winTitle.style.color = '#44ff44';
   } else {
-    winTitle.textContent = 'IMPOSTORS WIN';
+    winTitle.textContent = typeof t === 'function' ? t('impostorsWin') : 'IMPOSTORS WIN';
     winTitle.style.color = '#ff4444';
   }
   winReason.textContent = reason;
@@ -5223,6 +5921,7 @@ socket.on('returnedToLobby', ({ players: pList, settings: s, host }) => {
   players = [];
   killFlashes = [];
   roleFlash.active = false;
+  currentGameMode = 'classic';
   // Restore skin indices and avatar from server data
   const me = pList.find(p => p.id === socket.id);
   if (me) {
@@ -5230,15 +5929,15 @@ socket.on('returnedToLobby', ({ players: pList, settings: s, host }) => {
     myOutfitIndex = OUTFITS.indexOf(me.outfit) >= 0 ? OUTFITS.indexOf(me.outfit) : 0;
     myPetIndex = PETS.indexOf(me.pet) >= 0 ? PETS.indexOf(me.pet) : 0;
     updateHatLabel();
-    outfitLabel.textContent = OUTFIT_NAMES[OUTFITS[myOutfitIndex]];
-    petLabel.textContent = PET_NAMES[PETS[myPetIndex]];
+    outfitLabel.textContent = typeof tOutfit === 'function' ? tOutfit(OUTFITS[myOutfitIndex]) : OUTFIT_NAMES[OUTFITS[myOutfitIndex]];
+    petLabel.textContent = typeof tPet === 'function' ? tPet(PETS[myPetIndex]) : PET_NAMES[PETS[myPetIndex]];
     if (me.avatar) {
       myAvatarData = me.avatar;
-      avatarLabel.textContent = 'Uploaded!';
+      avatarLabel.textContent = typeof t === 'function' ? t('uploaded') : 'Uploaded!';
       avatarRemoveBtn.style.display = 'inline-block';
     } else {
       myAvatarData = null;
-      avatarLabel.textContent = 'No photo';
+      avatarLabel.textContent = typeof t === 'function' ? t('noPhoto') : 'No photo';
       avatarRemoveBtn.style.display = 'none';
     }
   }
@@ -5272,7 +5971,7 @@ startBtn.addEventListener('click', () => {
 });
 
 // Settings change handlers
-['set-impostors', 'set-killcd', 'set-speed', 'set-tasks', 'set-discuss', 'set-voting', 'set-crewvision', 'set-impvision', 'set-confirmeject', 'set-anonvotes', 'set-specialroles', 'set-map'].forEach(id => {
+['set-impostors', 'set-killcd', 'set-speed', 'set-tasks', 'set-discuss', 'set-voting', 'set-crewvision', 'set-impvision', 'set-confirmeject', 'set-anonvotes', 'set-specialroles', 'set-map', 'set-gamemode'].forEach(id => {
   const el = document.getElementById(id);
   if (el) {
     el.addEventListener('change', () => {
@@ -5289,6 +5988,7 @@ startBtn.addEventListener('click', () => {
         anonymousVotes: document.getElementById('set-anonvotes').value === '1',
         specialRoles: document.getElementById('set-specialroles').value === '1',
         mapName: document.getElementById('set-map').value,
+        gameMode: document.getElementById('set-gamemode').value,
       });
     });
   }
@@ -5301,6 +6001,8 @@ socket.on('settingsUpdated', (s) => {
   if (setMap && s.mapName) setMap.value = s.mapName;
   const setSpec = document.getElementById('set-specialroles');
   if (setSpec) setSpec.value = s.specialRoles ? '1' : '0';
+  const setGM = document.getElementById('set-gamemode');
+  if (setGM && s.gameMode) setGM.value = s.gameMode;
 });
 
 lobbyBtn.addEventListener('click', () => {
@@ -5687,7 +6389,8 @@ function checkAchievements() {
 function showAchievementToast(achievement) {
   const toast = document.createElement('div');
   toast.className = 'achieve-toast';
-  toast.textContent = `${achievement.icon} Achievement Unlocked: ${achievement.name}`;
+  const achText = typeof t === 'function' ? t('achievementUnlocked')(achievement.name) : `Achievement Unlocked: ${achievement.name}`;
+  toast.textContent = `${achievement.icon} ${achText}`;
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 4000);
 }
@@ -5695,19 +6398,20 @@ function showAchievementToast(achievement) {
 function showStatsPanel() {
   const stats = loadStats();
   const content = document.getElementById('stats-content');
+  const _ts = typeof t === 'function' ? t : (k) => k;
   content.innerHTML = `
-    <div>Games Played: <strong>${stats.gamesPlayed || 0}</strong></div>
-    <div>Games Won: <strong>${stats.gamesWon || 0}</strong></div>
-    <div>Times Impostor: <strong>${stats.timesImpostor || 0}</strong></div>
-    <div>Impostor Wins: <strong>${stats.impostorWins || 0}</strong></div>
-    <div>Total Kills: <strong>${stats.kills || 0}</strong></div>
-    <div>Tasks Completed: <strong>${stats.tasksCompleted || 0}</strong></div>
-    <div>Meetings Called: <strong>${stats.meetingsCalled || 0}</strong></div>
-    <div>Bodies Reported: <strong>${stats.bodiesReported || 0}</strong></div>
-    <div>Vents Used: <strong>${stats.ventsUsed || 0}</strong></div>
-    <div>Sabotages: <strong>${stats.sabotages || 0}</strong></div>
-    <div>Chat Messages: <strong>${stats.chatsSent || 0}</strong></div>
-    <div>Games Survived: <strong>${stats.survived || 0}</strong></div>
+    <div>${_ts('gamesPlayed')}: <strong>${stats.gamesPlayed || 0}</strong></div>
+    <div>${_ts('gamesWon')}: <strong>${stats.gamesWon || 0}</strong></div>
+    <div>${_ts('timesImpostor')}: <strong>${stats.timesImpostor || 0}</strong></div>
+    <div>${_ts('impostorWins')}: <strong>${stats.impostorWins || 0}</strong></div>
+    <div>${_ts('totalKills')}: <strong>${stats.kills || 0}</strong></div>
+    <div>${_ts('tasksCompleted')}: <strong>${stats.tasksCompleted || 0}</strong></div>
+    <div>${_ts('meetingsCalled')}: <strong>${stats.meetingsCalled || 0}</strong></div>
+    <div>${_ts('bodiesReported')}: <strong>${stats.bodiesReported || 0}</strong></div>
+    <div>${_ts('ventsUsed')}: <strong>${stats.ventsUsed || 0}</strong></div>
+    <div>${_ts('sabotages')}: <strong>${stats.sabotages || 0}</strong></div>
+    <div>${_ts('chatMessages')}: <strong>${stats.chatsSent || 0}</strong></div>
+    <div>${_ts('gamesSurvived')}: <strong>${stats.survived || 0}</strong></div>
   `;
   document.getElementById('stats-panel').classList.add('active');
 }
@@ -5724,6 +6428,248 @@ function showAchievementsPanel() {
   }).join('');
   document.getElementById('achieve-panel').classList.add('active');
 }
+
+// ============================================
+// DAILY CHALLENGES
+// ============================================
+const CHALLENGE_DEFS = [
+  { id: 'winImpostor', langKey: 'challengeWinImpostor', check: (s) => s._sessionImpostorWins >= 1 },
+  { id: 'winCrewmate', langKey: 'challengeWinCrewmate', check: (s) => s._sessionCrewmateWins >= 1 },
+  { id: 'complete5Tasks', langKey: 'challengeComplete5Tasks', check: (s) => s._sessionTasks >= 5 },
+  { id: 'complete10Tasks', langKey: 'challengeComplete10Tasks', check: (s) => s._sessionTasks >= 10 },
+  { id: 'survive', langKey: 'challengeSurvive', check: (s) => s._sessionSurvived >= 1 },
+  { id: 'get2Kills', langKey: 'challengeGet2Kills', check: (s) => s._sessionMaxKillsInGame >= 2 },
+  { id: 'report', langKey: 'challengeReport', check: (s) => s._sessionReports >= 1 },
+  { id: 'callMeeting', langKey: 'challengeCallMeeting', check: (s) => s._sessionMeetings >= 1 },
+  { id: 'play3Games', langKey: 'challengePlay3Games', check: (s) => s._sessionGames >= 3 },
+  { id: 'useVent', langKey: 'challengeUseVent', check: (s) => s._sessionVents >= 1 },
+  { id: 'sendChat', langKey: 'challengeSendChat', check: (s) => s._sessionChats >= 5 },
+  { id: 'winGame', langKey: 'challengeWinGame', check: (s) => s._sessionWins >= 1 },
+];
+
+// Session-scoped counters for challenge tracking (reset on page load)
+const challengeSession = {
+  _sessionGames: 0, _sessionWins: 0, _sessionImpostorWins: 0, _sessionCrewmateWins: 0,
+  _sessionTasks: 0, _sessionSurvived: 0, _sessionMaxKillsInGame: 0, _sessionReports: 0,
+  _sessionMeetings: 0, _sessionVents: 0, _sessionChats: 0,
+};
+
+function getDayKey() {
+  return Math.floor(Date.now() / 86400000);
+}
+
+function getDailyChallenges() {
+  const dayKey = getDayKey();
+  // Seeded random from day
+  let seed = dayKey;
+  function rand() { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; }
+  // Pick 3 unique challenges
+  const indices = [];
+  while (indices.length < 3) {
+    const idx = Math.floor(rand() * CHALLENGE_DEFS.length);
+    if (!indices.includes(idx)) indices.push(idx);
+  }
+  return indices.map(i => CHALLENGE_DEFS[i]);
+}
+
+function loadChallengeProgress() {
+  try {
+    const data = JSON.parse(localStorage.getItem('sb_challenges') || '{}');
+    if (data.dayKey !== getDayKey()) {
+      // New day — check if previous day was completed for streak
+      return { dayKey: getDayKey(), completed: [], stars: data.stars || 0, streak: data.allDone ? (data.streak || 0) + 1 : 0, allDone: false };
+    }
+    return data;
+  } catch { return { dayKey: getDayKey(), completed: [], stars: 0, streak: 0, allDone: false }; }
+}
+
+function saveChallengeProgress(progress) {
+  localStorage.setItem('sb_challenges', JSON.stringify(progress));
+}
+
+function checkDailyChallenges() {
+  const challenges = getDailyChallenges();
+  const progress = loadChallengeProgress();
+  let changed = false;
+
+  challenges.forEach(ch => {
+    if (progress.completed.includes(ch.id)) return;
+    if (ch.check(challengeSession)) {
+      progress.completed.push(ch.id);
+      progress.stars = (progress.stars || 0) + 1;
+      changed = true;
+      // Show toast
+      if (typeof playSound === 'function') playSound('task');
+    }
+  });
+
+  // Bonus for completing all 3
+  if (progress.completed.length >= 3 && !progress.allDone) {
+    progress.allDone = true;
+    progress.stars = (progress.stars || 0) + 3;
+    progress.streak = (progress.streak || 0) + 1;
+    changed = true;
+  }
+
+  if (changed) saveChallengeProgress(progress);
+}
+
+function showChallengesPanel() {
+  const challenges = getDailyChallenges();
+  const progress = loadChallengeProgress();
+  const list = document.getElementById('challenges-list');
+  const starsEl = document.getElementById('challenges-stars');
+  const streakEl = document.getElementById('challenges-streak');
+  const bonusEl = document.getElementById('challenges-bonus');
+  const titleEl = document.getElementById('challenges-title');
+  const closeEl = document.getElementById('challenges-close');
+
+  if (titleEl) titleEl.textContent = typeof t === 'function' ? t('dailyChallenges') : 'DAILY CHALLENGES';
+  if (closeEl) closeEl.textContent = typeof t === 'function' ? t('close') : 'Close';
+  if (starsEl) starsEl.textContent = typeof t === 'function' ? t('stars')(progress.stars || 0) : `Stars: ${progress.stars || 0}`;
+  if (streakEl) streakEl.textContent = typeof t === 'function' ? t('challengeStreak')(progress.streak || 0) : `Streak: ${progress.streak || 0} days`;
+
+  if (list) {
+    list.innerHTML = challenges.map(ch => {
+      const done = progress.completed.includes(ch.id);
+      const name = typeof t === 'function' ? t(ch.langKey) : ch.id;
+      const doneLabel = typeof t === 'function' ? t('challengeComplete') : 'Complete!';
+      return `<div style="padding:8px;margin:4px 0;background:rgba(255,255,255,0.05);border-radius:6px;display:flex;align-items:center;gap:8px;${done ? 'opacity:0.6' : ''}">
+        <span style="font-size:1.2em">${done ? '\u2705' : '\u2B50'}</span>
+        <span style="flex:1">${name}</span>
+        ${done ? `<span style="color:#44ff44;font-size:0.8em">${doneLabel}</span>` : ''}
+      </div>`;
+    }).join('');
+  }
+
+  if (bonusEl) {
+    if (progress.allDone) {
+      bonusEl.style.display = 'block';
+      bonusEl.textContent = typeof t === 'function' ? t('allChallengesBonus') : 'All 3 done! +3 bonus stars';
+    } else {
+      bonusEl.style.display = 'none';
+    }
+  }
+
+  document.getElementById('challenges-panel').classList.add('active');
+}
+
+document.getElementById('challenges-btn').addEventListener('click', () => showChallengesPanel());
+document.getElementById('challenges-close').addEventListener('click', () => {
+  document.getElementById('challenges-panel').classList.remove('active');
+});
+
+// ============================================
+// FRIEND SYSTEM
+// ============================================
+function getMyFriendCode() {
+  let code = localStorage.getItem('sb_friend_code');
+  if (!code || code.length !== 6) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    code = '';
+    for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)];
+    localStorage.setItem('sb_friend_code', code);
+  }
+  return code;
+}
+
+function getFriendsList() {
+  try { return JSON.parse(localStorage.getItem('sb_friends') || '[]'); }
+  catch { return []; }
+}
+
+function saveFriendsList(list) {
+  localStorage.setItem('sb_friends', JSON.stringify(list));
+}
+
+function showFriendsPanel() {
+  const myCode = getMyFriendCode();
+  document.getElementById('friends-my-code').textContent = myCode;
+  document.getElementById('friends-title').textContent = typeof t === 'function' ? t('friends') : 'FRIENDS';
+  document.getElementById('friends-your-code-label').textContent = typeof t === 'function' ? t('yourCode') : 'Your Code:';
+  document.getElementById('friend-add-btn').textContent = typeof t === 'function' ? t('addFriend') : 'Add';
+  document.getElementById('friend-code-input').placeholder = typeof t === 'function' ? t('friendCodePlaceholder') : 'Friend code';
+  document.getElementById('friends-close').textContent = typeof t === 'function' ? t('close') : 'Close';
+
+  // Register my code with server
+  socket.emit('registerFriendCode', { friendCode: myCode, name: document.getElementById('name-input').value || 'Player' });
+
+  // Query online status
+  const friends = getFriendsList();
+  if (friends.length > 0) {
+    socket.emit('queryFriends', { codes: friends.map(f => f.code) });
+  }
+  renderFriendsList([]);
+  document.getElementById('friends-panel').classList.add('active');
+}
+
+function renderFriendsList(onlineData) {
+  const friends = getFriendsList();
+  const list = document.getElementById('friends-list');
+  if (friends.length === 0) {
+    list.innerHTML = `<div style="color:#666;text-align:center;padding:16px">${typeof t === 'function' ? t('noFriends') : 'No friends added yet'}</div>`;
+    return;
+  }
+  const onlineMap = new Map(onlineData.map(f => [f.code, f]));
+  list.innerHTML = friends.map(f => {
+    const status = onlineMap.get(f.code);
+    const isOnline = status && status.online;
+    const onLabel = typeof t === 'function' ? t('online') : 'Online';
+    const offLabel = typeof t === 'function' ? t('offline') : 'Offline';
+    const joinLabel = typeof t === 'function' ? t('joinFriend') : 'Join';
+    return `<div style="padding:6px 8px;margin:3px 0;background:rgba(255,255,255,0.05);border-radius:6px;display:flex;align-items:center;gap:8px">
+      <span style="width:8px;height:8px;border-radius:50%;background:${isOnline ? '#44ff44' : '#666'};flex-shrink:0"></span>
+      <span style="flex:1">${status ? status.name : f.code} <span style="color:#666;font-size:0.8em">${f.code}</span></span>
+      <span style="font-size:0.75em;color:${isOnline ? '#44ff44' : '#666'}">${isOnline ? onLabel : offLabel}</span>
+      ${isOnline && status.inLobby ? `<button class="btn" onclick="joinFriendRoom('${status.roomCode}')" style="font-size:0.7em;padding:2px 8px">${joinLabel}</button>` : ''}
+      <span onclick="removeFriend('${f.code}')" style="cursor:pointer;color:#666;font-size:0.9em">&times;</span>
+    </div>`;
+  }).join('');
+}
+
+window.joinFriendRoom = function(code) {
+  if (!code) return;
+  const name = document.getElementById('name-input').value.trim();
+  if (!name) return;
+  document.getElementById('friends-panel').classList.remove('active');
+  socket.emit('joinRoom', { code, name });
+};
+
+window.removeFriend = function(code) {
+  const friends = getFriendsList().filter(f => f.code !== code);
+  saveFriendsList(friends);
+  socket.emit('queryFriends', { codes: friends.map(f => f.code) });
+};
+
+document.getElementById('friends-btn').addEventListener('click', () => showFriendsPanel());
+document.getElementById('friends-close').addEventListener('click', () => {
+  document.getElementById('friends-panel').classList.remove('active');
+});
+
+document.getElementById('friend-add-btn').addEventListener('click', () => {
+  const input = document.getElementById('friend-code-input');
+  const code = input.value.trim().toUpperCase();
+  if (!code || code.length !== 6) return;
+  if (code === getMyFriendCode()) return; // can't add yourself
+  const friends = getFriendsList();
+  if (friends.find(f => f.code === code)) return; // already added
+  friends.push({ code });
+  saveFriendsList(friends);
+  input.value = '';
+  // Re-query
+  socket.emit('queryFriends', { codes: friends.map(f => f.code) });
+});
+
+socket.on('friendsStatus', ({ friends: onlineData }) => {
+  renderFriendsList(onlineData);
+});
+
+// Register friend code on connect
+socket.on('connect', () => {
+  const code = getMyFriendCode();
+  const name = document.getElementById('name-input').value || 'Player';
+  socket.emit('registerFriendCode', { friendCode: code, name });
+});
 
 // --- ROOM BROWSER ---
 document.getElementById('browse-btn').addEventListener('click', () => {
@@ -5806,127 +6752,61 @@ document.getElementById('achieve-close').addEventListener('click', () => {
 // Wrap socket.emit to track stats for specific events
 const _origSocketEmit = socket.emit.bind(socket);
 socket.emit = function(event, ...args) {
-  if (event === 'callEmergency') incrementStat('meetingsCalled');
-  if (event === 'reportBody') incrementStat('bodiesReported');
-  if (event === 'ventMove') incrementStat('ventsUsed');
+  if (event === 'callEmergency') { incrementStat('meetingsCalled'); challengeSession._sessionMeetings++; }
+  if (event === 'reportBody') { incrementStat('bodiesReported'); challengeSession._sessionReports++; }
+  if (event === 'ventMove') { incrementStat('ventsUsed'); challengeSession._sessionVents++; }
   if (event === 'triggerSabotage') incrementStat('sabotages');
-  if (event === 'meetingChat') incrementStat('chatsSent');
+  if (event === 'meetingChat') { incrementStat('chatsSent'); challengeSession._sessionChats++; }
   return _origSocketEmit(event, ...args);
 };
 
 // ============================================
 // PROCEDURAL SOUND EFFECTS
 // ============================================
-const AudioCtx = window.AudioContext || window.webkitAudioContext;
-let audioCtx = null;
-
-function getAudioCtx() {
-  if (!audioCtx) audioCtx = new AudioCtx();
-  return audioCtx;
-}
-
+// Sound system — uses SoundEngine from sounds.js
 function playSound(type) {
-  try {
-    const ctx = getAudioCtx();
-    if (ctx.state === 'suspended') ctx.resume();
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    const now = ctx.currentTime;
-
-    switch (type) {
-      case 'kill':
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(400, now);
-        osc.frequency.linearRampToValueAtTime(80, now + 0.3);
-        gain.gain.setValueAtTime(0.15, now);
-        gain.gain.linearRampToValueAtTime(0, now + 0.3);
-        osc.start(now); osc.stop(now + 0.3);
-        break;
-      case 'meeting':
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(600, now);
-        osc.frequency.setValueAtTime(800, now + 0.1);
-        osc.frequency.setValueAtTime(1000, now + 0.2);
-        gain.gain.setValueAtTime(0.1, now);
-        gain.gain.linearRampToValueAtTime(0, now + 0.4);
-        osc.start(now); osc.stop(now + 0.4);
-        break;
-      case 'vote':
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(500, now);
-        osc.frequency.linearRampToValueAtTime(700, now + 0.15);
-        gain.gain.setValueAtTime(0.08, now);
-        gain.gain.linearRampToValueAtTime(0, now + 0.2);
-        osc.start(now); osc.stop(now + 0.2);
-        break;
-      case 'task':
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(800, now);
-        osc.frequency.setValueAtTime(1000, now + 0.08);
-        osc.frequency.setValueAtTime(1200, now + 0.16);
-        gain.gain.setValueAtTime(0.08, now);
-        gain.gain.linearRampToValueAtTime(0, now + 0.25);
-        osc.start(now); osc.stop(now + 0.25);
-        break;
-      case 'eject':
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(500, now);
-        osc.frequency.linearRampToValueAtTime(100, now + 0.6);
-        gain.gain.setValueAtTime(0.1, now);
-        gain.gain.linearRampToValueAtTime(0, now + 0.6);
-        osc.start(now); osc.stop(now + 0.6);
-        break;
-      case 'start':
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(400, now);
-        osc.frequency.setValueAtTime(500, now + 0.1);
-        osc.frequency.setValueAtTime(600, now + 0.2);
-        osc.frequency.setValueAtTime(800, now + 0.3);
-        gain.gain.setValueAtTime(0.1, now);
-        gain.gain.linearRampToValueAtTime(0, now + 0.5);
-        osc.start(now); osc.stop(now + 0.5);
-        break;
-      case 'win':
-        osc.type = 'triangle';
-        [523, 659, 784, 1047].forEach((freq, i) => {
-          osc.frequency.setValueAtTime(freq, now + i * 0.15);
-        });
-        gain.gain.setValueAtTime(0.1, now);
-        gain.gain.linearRampToValueAtTime(0, now + 0.8);
-        osc.start(now); osc.stop(now + 0.8);
-        break;
-      case 'lose':
-        osc.type = 'sawtooth';
-        [400, 350, 300, 200].forEach((freq, i) => {
-          osc.frequency.setValueAtTime(freq, now + i * 0.2);
-        });
-        gain.gain.setValueAtTime(0.1, now);
-        gain.gain.linearRampToValueAtTime(0, now + 1);
-        osc.start(now); osc.stop(now + 1);
-        break;
-      case 'alarm':
-        osc.type = 'square';
-        osc.frequency.setValueAtTime(800, now);
-        osc.frequency.setValueAtTime(400, now + 0.15);
-        osc.frequency.setValueAtTime(800, now + 0.3);
-        osc.frequency.setValueAtTime(400, now + 0.45);
-        gain.gain.setValueAtTime(0.12, now);
-        gain.gain.linearRampToValueAtTime(0, now + 0.6);
-        osc.start(now); osc.stop(now + 0.6);
-        break;
-    }
-  } catch (e) { /* audio not supported */ }
+  const map = {
+    kill: 'kill', meeting: 'meeting', vote: 'vote', task: 'taskComplete',
+    eject: 'eject', start: 'gameStart', win: 'victory', lose: 'defeat',
+    alarm: 'sabotageAlarm', door: 'doorClose', vent: 'ventMove',
+    chat: 'chat', emote: 'emote', click: 'buttonClick',
+    emergency: 'emergency', sabotageFixed: 'sabotageFixed',
+  };
+  if (typeof soundEngine !== 'undefined') soundEngine.play(map[type] || type);
 }
 
-// Hook sounds into existing socket events
+// Volume sliders
+['vol-master', 'vol-sfx', 'vol-music'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) {
+    // Set initial value from saved volumes
+    if (typeof soundEngine !== 'undefined') {
+      const key = id.replace('vol-', '');
+      el.value = Math.round((soundEngine.volumes[key] || 0.5) * 100);
+    }
+    el.addEventListener('input', () => {
+      const key = id.replace('vol-', '');
+      if (typeof soundEngine !== 'undefined') soundEngine.setVolume(key, el.value / 100);
+    });
+  }
+});
+
+// Start music based on game phase
+function updateMusic() {
+  if (typeof soundEngine === 'undefined') return;
+  if (gamePhase === 'lobby') soundEngine.startMusic('lobby');
+  else if (gamePhase === 'playing') soundEngine.startMusic('playing');
+  else if (gamePhase === 'meeting' || gamePhase === 'voting') soundEngine.startMusic('meeting');
+  else soundEngine.stopMusic();
+}
+
+// Hook sounds + music into existing socket events
 const _origOnKilled = socket.listeners('playerKilled')[0];
 socket.off('playerKilled');
 socket.on('playerKilled', (data) => {
   _origOnKilled(data);
   playSound('kill');
-  haptic([100, 50, 100]); // double pulse on kill
+  haptic([100, 50, 100]);
 });
 
 const _origOnMeeting = socket.listeners('meetingStarted')[0];
@@ -5934,7 +6814,8 @@ socket.off('meetingStarted');
 socket.on('meetingStarted', (data) => {
   _origOnMeeting(data);
   playSound('meeting');
-  haptic([200]); // single pulse on meeting
+  haptic([200]);
+  updateMusic();
 });
 
 const _origOnGameStarted = socket.listeners('gameStarted')[0];
@@ -5942,6 +6823,9 @@ socket.off('gameStarted');
 socket.on('gameStarted', (data) => {
   _origOnGameStarted(data);
   playSound('start');
+  updateMusic();
+  challengeSession._sessionGames++;
+  challengeSession._currentGameKills = 0; // track kills per game
 });
 
 const _origOnVotingResults = socket.listeners('votingResults')[0];
@@ -5959,6 +6843,7 @@ const _origOnGameOver = socket.listeners('gameOver')[0];
 socket.off('gameOver');
 socket.on('gameOver', (data) => {
   _origOnGameOver(data);
+  updateMusic(); // stops music
   const _me = players.find(p => p.id === myId);
   if (_me) {
     const iWon = (data.winner === 'crewmates' && _me.role !== 'impostor') ||
@@ -5966,25 +6851,67 @@ socket.on('gameOver', (data) => {
     playSound(iWon ? 'win' : 'lose');
 
     // Track end-game stats
-    if (iWon) incrementStat('gamesWon');
-    if (_me.role === 'impostor' && iWon) incrementStat('impostorWins');
-    if (_me.role !== 'impostor' && _me.alive) incrementStat('survived');
+    if (iWon) { incrementStat('gamesWon'); challengeSession._sessionWins++; }
+    if (_me.role === 'impostor' && iWon) { incrementStat('impostorWins'); challengeSession._sessionImpostorWins++; }
+    if (_me.role !== 'impostor' && iWon) challengeSession._sessionCrewmateWins++;
+    if (_me.role !== 'impostor' && _me.alive) { incrementStat('survived'); challengeSession._sessionSurvived++; }
     // Track tasks completed this game
     if (data.stats && data.stats[myId]) {
       const myStats = data.stats[myId];
-      if (myStats.tasksCompleted) incrementStat('tasksCompleted', myStats.tasksCompleted);
-      if (myStats.kills) incrementStat('kills', myStats.kills);
+      if (myStats.tasksCompleted) { incrementStat('tasksCompleted', myStats.tasksCompleted); challengeSession._sessionTasks += myStats.tasksCompleted; }
+      if (myStats.kills) {
+        incrementStat('kills', myStats.kills);
+        challengeSession._currentGameKills = (challengeSession._currentGameKills || 0) + myStats.kills;
+        if (challengeSession._currentGameKills > challengeSession._sessionMaxKillsInGame) {
+          challengeSession._sessionMaxKillsInGame = challengeSession._currentGameKills;
+        }
+      }
     }
     checkAchievements();
+    checkDailyChallenges();
   }
 });
 
 // Sound on task complete + stats tracking + haptic
 const _origCloseTask = closeTask;
 closeTask = function(completed) {
-  if (completed) { playSound('task'); incrementStat('tasksCompleted'); haptic([50]); }
+  if (completed) { playSound('task'); incrementStat('tasksCompleted'); challengeSession._sessionTasks++; haptic([50]); }
   _origCloseTask(completed);
 };
+
+// Additional sound hooks
+socket.on('sabotageStarted', () => { playSound('alarm'); });
+socket.on('sabotageFixed', () => { playSound('sabotageFixed'); });
+socket.on('doorStateChanged', (data) => { if (data.closed) playSound('door'); });
+socket.on('meetingChatMessage', () => { playSound('chat'); });
+socket.on('playerEmote', () => { playSound('emote'); });
+socket.on('returnedToLobby', () => { updateMusic(); });
+
+// Footstep sound throttle
+let lastFootstepTime = 0;
+let lastFootstepPos = { x: 0, y: 0 };
+function checkFootstep() {
+  const me = players.find(p => p.id === myId);
+  if (!me || !me.alive || gamePhase !== 'playing') return;
+  const dx = me.x - lastFootstepPos.x;
+  const dy = me.y - lastFootstepPos.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const now = Date.now();
+  if (dist > 8 && now - lastFootstepTime > 250) {
+    playSound('footstep');
+    lastFootstepTime = now;
+    lastFootstepPos = { x: me.x, y: me.y };
+  }
+}
+// Check footstep every game state update
+const _origGameState = socket.listeners('gameState')[0];
+if (_origGameState) {
+  socket.off('gameState');
+  socket.on('gameState', (data) => {
+    _origGameState(data);
+    checkFootstep();
+  });
+}
 
 // ============================================
 // MOBILE UX IMPROVEMENTS
@@ -6309,3 +7236,358 @@ setInterval(() => {
     taskCanvas.onclick = null;
   }
 }, 1000);
+
+// ============================================
+// LANGUAGE TOGGLE
+// ============================================
+const langBtn = document.getElementById('lang-btn');
+if (langBtn) {
+  langBtn.addEventListener('click', () => {
+    const newLang = currentLang === 'en' ? 'he' : 'en';
+    setLanguage(newLang);
+    playSound('click');
+    // Update cosmetic labels to current language
+    if (typeof tHat === 'function') {
+      hatLabel.textContent = tHat(HATS[myHatIndex]);
+      outfitLabel.textContent = tOutfit(OUTFITS[myOutfitIndex]);
+      petLabel.textContent = tPet(PETS[myPetIndex]);
+    }
+  });
+}
+
+// ============================================
+// REPLAY SYSTEM
+// ============================================
+const replayScreen = document.getElementById('replay-screen');
+const replayCanvas = document.getElementById('replay-canvas');
+const replayCtx = replayCanvas ? replayCanvas.getContext('2d') : null;
+const replaySlider = document.getElementById('replay-slider');
+const replayPlayBtn = document.getElementById('replay-play');
+const replayTimeLabel = document.getElementById('replay-time');
+const replaySpeedSelect = document.getElementById('replay-speed');
+const replayCloseBtn = document.getElementById('replay-close');
+const replayBtn = document.getElementById('replay-btn');
+
+let replayData = null;
+let replayPlaying = false;
+let replayTime = 0; // current time in ms
+let replaySpeed = 1;
+let replayAnimFrame = null;
+let replayLastFrame = 0;
+
+if (replayBtn) {
+  replayBtn.addEventListener('click', () => {
+    playSound('click');
+    socket.emit('requestReplay');
+    replayBtn.textContent = typeof t === 'function' ? t('replayLoading') : 'Loading...';
+  });
+}
+
+socket.on('replayData', (data) => {
+  if (!data || !data.snapshots || data.snapshots.length === 0) {
+    if (replayBtn) replayBtn.textContent = typeof t === 'function' ? t('replayNoData') : 'No data';
+    return;
+  }
+  replayData = data;
+  openReplayViewer();
+});
+
+function openReplayViewer() {
+  if (!replayData || !replayScreen || !replayCanvas) return;
+  replayScreen.style.display = 'flex';
+  replayTime = 0;
+  replayPlaying = false;
+  replaySpeed = 1;
+  if (replaySpeedSelect) replaySpeedSelect.value = '1';
+  if (replayPlayBtn) replayPlayBtn.innerHTML = '&#9654;';
+  resizeReplayCanvas();
+  renderReplayFrame();
+  updateReplayTimeLabel();
+}
+
+function resizeReplayCanvas() {
+  if (!replayCanvas) return;
+  const parent = replayCanvas.parentElement;
+  replayCanvas.width = parent.clientWidth;
+  replayCanvas.height = parent.clientHeight - 60;
+}
+
+function getReplayMap() {
+  if (!replayData) return MAP_ALPHA;
+  return replayData.mapName === 'beta' ? MAP_BETA : MAP_ALPHA;
+}
+
+function getReplaySnapshot(timeMs) {
+  if (!replayData || !replayData.snapshots.length) return null;
+  // Binary search for closest snapshot <= timeMs
+  const snaps = replayData.snapshots;
+  let lo = 0, hi = snaps.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (snaps[mid].t <= timeMs) lo = mid;
+    else hi = mid - 1;
+  }
+  return snaps[lo];
+}
+
+function getReplayEventsInRange(startMs, endMs) {
+  if (!replayData) return [];
+  return replayData.events.filter(e => e.t >= startMs && e.t <= endMs);
+}
+
+function renderReplayFrame() {
+  if (!replayCtx || !replayData) return;
+  const rMap = getReplayMap();
+  const cw = replayCanvas.width;
+  const ch = replayCanvas.height;
+  replayCtx.clearRect(0, 0, cw, ch);
+
+  // Calculate scale to fit map in canvas
+  const mapW = rMap.width || 1600;
+  const mapH = rMap.height || 1500;
+  const scale = Math.min(cw / mapW, ch / mapH) * 0.9;
+  const offX = (cw - mapW * scale) / 2;
+  const offY = (ch - mapH * scale) / 2;
+
+  function toScreen(wx, wy) {
+    return { x: offX + wx * scale, y: offY + wy * scale };
+  }
+
+  // Draw background
+  replayCtx.fillStyle = '#080818';
+  replayCtx.fillRect(0, 0, cw, ch);
+
+  // Draw hallways
+  replayCtx.fillStyle = '#10102a';
+  for (const hall of rMap.hallways) {
+    const s = toScreen(hall.x, hall.y);
+    replayCtx.fillRect(s.x, s.y, hall.w * scale, hall.h * scale);
+  }
+
+  // Draw rooms
+  for (const room of rMap.rooms) {
+    const s = toScreen(room.x, room.y);
+    replayCtx.fillStyle = room.color || '#1a2535';
+    replayCtx.fillRect(s.x, s.y, room.w * scale, room.h * scale);
+    // Room name
+    replayCtx.fillStyle = 'rgba(255,255,255,0.3)';
+    replayCtx.font = `${Math.max(8, 10 * scale)}px monospace`;
+    replayCtx.textAlign = 'center';
+    const name = room.name || '';
+    replayCtx.fillText(name, s.x + room.w * scale / 2, s.y + room.h * scale / 2 + 3);
+  }
+
+  // Get current snapshot
+  const snap = getReplaySnapshot(replayTime);
+  if (!snap) return;
+
+  // Draw bodies
+  if (snap.bodies) {
+    for (const body of snap.bodies) {
+      const bs = toScreen(body.x, body.y);
+      replayCtx.fillStyle = body.color || '#888';
+      replayCtx.globalAlpha = 0.5;
+      replayCtx.beginPath();
+      replayCtx.ellipse(bs.x, bs.y, 10 * scale, 6 * scale, 0, 0, Math.PI * 2);
+      replayCtx.fill();
+      // X mark
+      replayCtx.strokeStyle = '#ff0000';
+      replayCtx.lineWidth = 2;
+      replayCtx.beginPath();
+      replayCtx.moveTo(bs.x - 5 * scale, bs.y - 5 * scale);
+      replayCtx.lineTo(bs.x + 5 * scale, bs.y + 5 * scale);
+      replayCtx.moveTo(bs.x + 5 * scale, bs.y - 5 * scale);
+      replayCtx.lineTo(bs.x - 5 * scale, bs.y + 5 * scale);
+      replayCtx.stroke();
+      replayCtx.globalAlpha = 1;
+    }
+  }
+
+  // Draw players
+  if (snap.players) {
+    for (const p of snap.players) {
+      if (!p.alive) continue;
+      const ps = toScreen(p.x, p.y);
+      const pInfo = replayData.players.find(rp => rp.id === p.id);
+      const pColor = pInfo ? pInfo.color : '#888';
+      const pRole = pInfo ? pInfo.role : 'crewmate';
+      const pName = pInfo ? pInfo.name : '?';
+      const r = 12 * scale;
+
+      // Glow for impostors
+      if (pRole === 'impostor') {
+        replayCtx.shadowColor = '#ff0000';
+        replayCtx.shadowBlur = 8 * scale;
+      }
+
+      // Body
+      replayCtx.fillStyle = pColor;
+      replayCtx.beginPath();
+      replayCtx.arc(ps.x, ps.y, r, 0, Math.PI * 2);
+      replayCtx.fill();
+
+      // Visor
+      replayCtx.fillStyle = '#a8d8ff';
+      replayCtx.beginPath();
+      replayCtx.arc(ps.x + r * 0.3, ps.y - r * 0.15, r * 0.35, 0, Math.PI * 2);
+      replayCtx.fill();
+
+      replayCtx.shadowColor = 'transparent';
+      replayCtx.shadowBlur = 0;
+
+      // Name
+      replayCtx.fillStyle = pRole === 'impostor' ? '#ff4444' : '#ffffff';
+      replayCtx.font = `bold ${Math.max(7, 9 * scale)}px monospace`;
+      replayCtx.textAlign = 'center';
+      replayCtx.fillText(pName, ps.x, ps.y - r - 3 * scale);
+    }
+  }
+
+  // Draw events near current time (show event markers)
+  const nearEvents = getReplayEventsInRange(replayTime - 2000, replayTime);
+  for (const ev of nearEvents) {
+    const age = replayTime - ev.t;
+    const alpha = Math.max(0, 1 - age / 2000);
+    if (ev.type === 'kill' && ev.data) {
+      const ks = toScreen(ev.data.x, ev.data.y);
+      replayCtx.globalAlpha = alpha;
+      replayCtx.fillStyle = '#ff0000';
+      replayCtx.font = `${Math.max(14, 20 * scale)}px serif`;
+      replayCtx.textAlign = 'center';
+      replayCtx.fillText('\u2620', ks.x, ks.y); // skull
+      replayCtx.globalAlpha = 1;
+    } else if (ev.type === 'meeting') {
+      replayCtx.globalAlpha = alpha;
+      replayCtx.fillStyle = '#ffdd44';
+      replayCtx.font = `bold ${Math.max(12, 16 * scale)}px monospace`;
+      replayCtx.textAlign = 'center';
+      replayCtx.fillText('MEETING', cw / 2, 30);
+      replayCtx.globalAlpha = 1;
+    }
+  }
+
+  // Draw event markers on timeline
+  drawReplayTimeline();
+
+  // Update slider
+  if (replaySlider && replayData.duration > 0) {
+    replaySlider.value = Math.round((replayTime / replayData.duration) * 1000);
+  }
+  updateReplayTimeLabel();
+}
+
+function drawReplayTimeline() {
+  if (!replayCtx || !replayData || !replayData.duration) return;
+  const cw = replayCanvas.width;
+  const ch = replayCanvas.height;
+  const timelineY = ch - 5;
+  const timelineW = cw - 20;
+  const startX = 10;
+
+  // Event markers on bottom of canvas
+  for (const ev of replayData.events) {
+    const x = startX + (ev.t / replayData.duration) * timelineW;
+    if (ev.type === 'kill') {
+      replayCtx.fillStyle = '#ff3333';
+      replayCtx.fillRect(x - 1, timelineY - 6, 3, 6);
+    } else if (ev.type === 'meeting') {
+      replayCtx.fillStyle = '#ffdd44';
+      replayCtx.fillRect(x - 1, timelineY - 8, 3, 8);
+    } else if (ev.type === 'vote') {
+      replayCtx.fillStyle = '#44aaff';
+      replayCtx.fillRect(x - 1, timelineY - 5, 3, 5);
+    }
+  }
+}
+
+function updateReplayTimeLabel() {
+  if (!replayTimeLabel || !replayData) return;
+  const cur = formatReplayTime(replayTime);
+  const total = formatReplayTime(replayData.duration);
+  replayTimeLabel.textContent = `${cur}/${total}`;
+}
+
+function formatReplayTime(ms) {
+  const secs = Math.floor(ms / 1000);
+  const m = Math.floor(secs / 60);
+  const s = secs % 60;
+  return `${m}:${s.toString().padStart(2, '0')}`;
+}
+
+function startReplayPlayback() {
+  replayPlaying = true;
+  if (replayPlayBtn) replayPlayBtn.innerHTML = '&#9646;&#9646;';
+  replayLastFrame = performance.now();
+  replayLoop();
+}
+
+function pauseReplayPlayback() {
+  replayPlaying = false;
+  if (replayPlayBtn) replayPlayBtn.innerHTML = '&#9654;';
+  if (replayAnimFrame) {
+    cancelAnimationFrame(replayAnimFrame);
+    replayAnimFrame = null;
+  }
+}
+
+function replayLoop() {
+  if (!replayPlaying || !replayData) return;
+  const now = performance.now();
+  const delta = (now - replayLastFrame) * replaySpeed;
+  replayLastFrame = now;
+  replayTime = Math.min(replayTime + delta, replayData.duration);
+
+  renderReplayFrame();
+
+  if (replayTime >= replayData.duration) {
+    pauseReplayPlayback();
+    return;
+  }
+
+  replayAnimFrame = requestAnimationFrame(replayLoop);
+}
+
+function closeReplayViewer() {
+  pauseReplayPlayback();
+  if (replayScreen) replayScreen.style.display = 'none';
+  replayData = null;
+  if (replayBtn) replayBtn.textContent = typeof t === 'function' ? t('watchReplay') : 'Watch Replay';
+}
+
+// Replay controls event listeners
+if (replayPlayBtn) {
+  replayPlayBtn.addEventListener('click', () => {
+    if (replayPlaying) {
+      pauseReplayPlayback();
+    } else {
+      if (replayTime >= (replayData ? replayData.duration : 0)) replayTime = 0;
+      startReplayPlayback();
+    }
+  });
+}
+
+if (replaySlider) {
+  replaySlider.addEventListener('input', () => {
+    if (!replayData) return;
+    replayTime = (parseInt(replaySlider.value) / 1000) * replayData.duration;
+    renderReplayFrame();
+  });
+}
+
+if (replaySpeedSelect) {
+  replaySpeedSelect.addEventListener('change', () => {
+    replaySpeed = parseInt(replaySpeedSelect.value) || 1;
+  });
+}
+
+if (replayCloseBtn) {
+  replayCloseBtn.addEventListener('click', closeReplayViewer);
+}
+
+// Resize replay canvas on window resize
+window.addEventListener('resize', () => {
+  if (replayScreen && replayScreen.style.display !== 'none') {
+    resizeReplayCanvas();
+    renderReplayFrame();
+  }
+});
