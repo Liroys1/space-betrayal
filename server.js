@@ -25,6 +25,9 @@ const REPORT_RANGE = 100;
 const TASK_RANGE = 60;
 const EMERGENCY_RANGE = 60;
 const TICK_RATE = 100; // ms per tick (10 Hz)
+const SABOTAGE_COOLDOWN = 30; // seconds between sabotages
+const SABOTAGE_FIX_RANGE = 80;
+const SABOTAGE_TIMERS = { lights: 0, o2: 45, reactor: 60 }; // 0 = no auto-lose
 
 const COLORS = [
   '#c51111', '#132ed2', '#11802d', '#ee54bb',
@@ -32,8 +35,9 @@ const COLORS = [
   '#6b2fbb', '#71491e', '#38fedb', '#50ef39',
 ];
 
-const HATS = ['none', 'crown', 'tophat', 'partyhat', 'chef', 'headband', 'flower', 'devil', 'halo', 'beanie', 'antenna', 'pirate', 'glasses', 'sunglasses', 'headphones', 'cap', 'wizard', 'cowboy', 'ninja', 'santa'];
+const HATS = ['none', 'crown', 'tophat', 'partyhat', 'chef', 'headband', 'flower', 'devil', 'halo', 'beanie', 'antenna', 'pirate', 'glasses', 'sunglasses', 'headphones', 'cap', 'wizard', 'cowboy', 'ninja', 'santa', 'witch', 'elfhat', 'bunnyears', 'pumpkin'];
 const OUTFITS = ['none', 'suit', 'labcoat', 'military', 'scarf', 'cape', 'toolbelt', 'astronaut', 'hoodie', 'police', 'pirate_outfit', 'ninja_outfit'];
+const PETS = ['none', 'mini_crewmate', 'dog', 'cat', 'robot', 'alien', 'hamster'];
 
 const MAP = {
   width: 2000,
@@ -74,6 +78,33 @@ const MAP = {
   ],
   emergencyButton: { x: 900, y: 425 },
   spawnPoint: { x: 900, y: 425 },
+  doors: [
+    { id: 0, roomName: 'Electrical', x: 630, y: 1020, w: 12, h: 60 },   // Electrical entrance
+    { id: 1, roomName: 'MedBay',     x: 630, y: 420,  w: 12, h: 60 },   // MedBay entrance
+    { id: 2, roomName: 'Security',   x: 630, y: 720,  w: 12, h: 60 },   // Security entrance
+    { id: 3, roomName: 'O2',         x: 1150, y: 720, w: 12, h: 60 },   // O2 entrance
+    { id: 4, roomName: 'Navigation', x: 920, y: 1250, w: 60, h: 12 },   // Navigation entrance
+    { id: 5, roomName: 'Shields',    x: 1150, y: 1020,w: 12, h: 60 },   // Shields entrance
+  ],
+  cameras: [
+    { id: 0, name: 'Cafeteria', x: 900, y: 425, range: 200 },
+    { id: 1, name: 'MedBay',    x: 500, y: 450, range: 180 },
+    { id: 2, name: 'Navigation', x: 900, y: 1340, range: 180 },
+    { id: 3, name: 'Electrical', x: 500, y: 1050, range: 180 },
+  ],
+  securityConsole: { x: 450, y: 750, roomName: 'Security' },
+  adminConsole: { x: 850, y: 750, roomName: 'Storage' },
+  sabotageFixStations: {
+    lights: [{ x: 480, y: 1050, roomName: 'Electrical' }],
+    o2: [
+      { x: 1220, y: 730, roomName: 'O2' },
+      { x: 800, y: 380, roomName: 'Cafeteria' },
+    ],
+    reactor: [
+      { x: 880, y: 100, roomName: 'Upper Engine' },
+      { x: 880, y: 1050, roomName: 'Lower Engine' },
+    ],
+  },
 };
 
 
@@ -96,6 +127,109 @@ const TASK_DEFINITIONS = [
   { id: 'unlock_1',     type: 'unlock',  roomName: 'Weapons',   x: 1300, y: 470 },
   { id: 'trash_1',      type: 'trash',   roomName: 'Cafeteria', x: 900,  y: 480 },
 ];
+
+// ============================================
+// MAP BETA - Space Station Beta (blue/white theme)
+// ============================================
+const MAP_BETA = {
+  width: 2000,
+  height: 1500,
+  rooms: [
+    { name: 'Central Hub',    x: 750,  y: 380,  w: 300, h: 260 },
+    { name: 'Bridge',         x: 750,  y: 80,   w: 280, h: 200 },
+    { name: 'Reactor Core',   x: 250,  y: 100,  w: 220, h: 180 },
+    { name: 'Observatory',    x: 1350, y: 100,  w: 220, h: 180 },
+    { name: 'Laboratory',     x: 300,  y: 400,  w: 260, h: 220 },
+    { name: 'Armory',         x: 1300, y: 400,  w: 260, h: 220 },
+    { name: 'Communications', x: 250,  y: 750,  w: 260, h: 220 },
+    { name: 'Cargo Bay',      x: 750,  y: 750,  w: 300, h: 220 },
+    { name: 'Life Support',   x: 1350, y: 750,  w: 260, h: 220 },
+    { name: 'Greenhouse',     x: 300,  y: 1100, w: 260, h: 220 },
+    { name: 'Airlock',        x: 750,  y: 1100, w: 300, h: 200 },
+  ],
+  hallways: [
+    // Top row horizontal
+    { x: 470,  y: 150, w: 280, h: 60 },    // Reactor <-> Bridge
+    { x: 1030, y: 150, w: 320, h: 60 },    // Bridge <-> Observatory
+    // Top to middle vertical
+    { x: 350,  y: 280, w: 60, h: 120 },    // Reactor <-> Laboratory
+    { x: 870,  y: 280, w: 60, h: 100 },    // Bridge <-> Central Hub
+    { x: 1420, y: 280, w: 60, h: 120 },    // Observatory <-> Armory
+    // Middle row horizontal
+    { x: 560,  y: 480, w: 190, h: 60 },    // Laboratory <-> Central Hub
+    { x: 1050, y: 480, w: 250, h: 60 },    // Central Hub <-> Armory
+    // Middle to bottom vertical
+    { x: 380,  y: 620, w: 60, h: 130 },    // Laboratory <-> Communications
+    { x: 870,  y: 640, w: 60, h: 110 },    // Central Hub <-> Cargo Bay
+    { x: 1430, y: 620, w: 60, h: 130 },    // Armory <-> Life Support
+    // Bottom row horizontal
+    { x: 510,  y: 830, w: 240, h: 60 },    // Communications <-> Cargo Bay
+    { x: 1050, y: 830, w: 300, h: 60 },    // Cargo Bay <-> Life Support
+    // Bottom to lower vertical
+    { x: 380,  y: 970, w: 60, h: 130 },    // Communications <-> Greenhouse
+    { x: 870,  y: 970, w: 60, h: 130 },    // Cargo Bay <-> Airlock
+  ],
+  vents: [
+    { a: { x: 380, y: 500 }, b: { x: 380, y: 850 } },     // Lab <-> Communications
+    { a: { x: 1430, y: 500 }, b: { x: 1430, y: 850 } },   // Armory <-> Life Support
+    { a: { x: 880, y: 170 }, b: { x: 880, y: 1190 } },    // Bridge <-> Airlock
+  ],
+  emergencyButton: { x: 900, y: 510 },
+  spawnPoint: { x: 900, y: 510 },
+  doors: [
+    { id: 0, roomName: 'Laboratory',     x: 560, y: 500, w: 12, h: 60 },
+    { id: 1, roomName: 'Armory',         x: 1300, y: 500, w: 12, h: 60 },
+    { id: 2, roomName: 'Communications', x: 510, y: 850, w: 12, h: 60 },
+    { id: 3, roomName: 'Life Support',   x: 1350, y: 850, w: 12, h: 60 },
+    { id: 4, roomName: 'Airlock',        x: 890, y: 1100, w: 60, h: 12 },
+    { id: 5, roomName: 'Greenhouse',     x: 400, y: 1100, w: 60, h: 12 },
+  ],
+  cameras: [
+    { id: 0, name: 'Central Hub', x: 900, y: 510, range: 200 },
+    { id: 1, name: 'Bridge',      x: 890, y: 180, range: 180 },
+    { id: 2, name: 'Cargo Bay',   x: 900, y: 860, range: 180 },
+    { id: 3, name: 'Greenhouse',  x: 430, y: 1210, range: 180 },
+  ],
+  securityConsole: { x: 350, y: 850, roomName: 'Communications' },
+  adminConsole: { x: 900, y: 850, roomName: 'Cargo Bay' },
+  sabotageFixStations: {
+    lights: [{ x: 380, y: 500, roomName: 'Laboratory' }],
+    o2: [
+      { x: 1450, y: 850, roomName: 'Life Support' },
+      { x: 880, y: 150, roomName: 'Bridge' },
+    ],
+    reactor: [
+      { x: 340, y: 180, roomName: 'Reactor Core' },
+      { x: 430, y: 1200, roomName: 'Greenhouse' },
+    ],
+  },
+};
+
+const TASK_DEFINITIONS_BETA = [
+  { id: 'b_wires_1',     type: 'wires',     roomName: 'Communications', x: 350, y: 850 },
+  { id: 'b_wires_2',     type: 'wires',     roomName: 'Laboratory',     x: 400, y: 500 },
+  { id: 'b_swipe_1',     type: 'swipeCard', roomName: 'Bridge',         x: 880, y: 150 },
+  { id: 'b_asteroids_1', type: 'asteroids', roomName: 'Armory',         x: 1430, y: 480 },
+  { id: 'b_download_1',  type: 'download',  roomName: 'Central Hub',    x: 850, y: 450 },
+  { id: 'b_download_2',  type: 'download',  roomName: 'Observatory',    x: 1450, y: 180 },
+  { id: 'b_fuel_1',      type: 'fuel',      roomName: 'Reactor Core',   x: 340, y: 180 },
+  { id: 'b_fuel_2',      type: 'fuel',      roomName: 'Greenhouse',     x: 430, y: 1200 },
+  { id: 'b_calibrate_1', type: 'calibrate', roomName: 'Observatory',    x: 1480, y: 220 },
+  { id: 'b_download_3',  type: 'download',  roomName: 'Life Support',   x: 1480, y: 850 },
+  { id: 'b_simon_1',     type: 'simon',     roomName: 'Life Support',   x: 1450, y: 800 },
+  { id: 'b_unlock_1',    type: 'unlock',    roomName: 'Armory',         x: 1380, y: 550 },
+  { id: 'b_trash_1',     type: 'trash',     roomName: 'Cargo Bay',      x: 900, y: 900 },
+  { id: 'b_wires_3',     type: 'wires',     roomName: 'Airlock',        x: 880, y: 1200 },
+  { id: 'b_calibrate_2', type: 'calibrate', roomName: 'Greenhouse',     x: 380, y: 1250 },
+];
+
+function getMap(room) {
+  return room.settings && room.settings.mapName === 'beta' ? MAP_BETA : MAP;
+}
+
+function getTaskDefs(room) {
+  return room.settings && room.settings.mapName === 'beta' ? TASK_DEFINITIONS_BETA : TASK_DEFINITIONS;
+}
 
 // ============================================
 // STATE
@@ -126,9 +260,10 @@ function pointInAnyRect(px, py, rects) {
   return false;
 }
 
-function isWalkable(x, y) {
+function isWalkable(x, y, map) {
   const m = PLAYER_RADIUS * 0.6;
-  const allRects = [...MAP.rooms, ...MAP.hallways];
+  const theMap = map || MAP;
+  const allRects = [...theMap.rooms, ...theMap.hallways];
   return (
     pointInAnyRect(x - m, y - m, allRects) &&
     pointInAnyRect(x + m, y - m, allRects) &&
@@ -151,7 +286,7 @@ function buildSnapshot(room) {
   for (const [, p] of room.players) {
     players.push({
       id: p.id, x: p.x, y: p.y, color: p.color,
-      alive: p.alive, name: p.name, hat: p.hat, outfit: p.outfit,
+      alive: p.alive, name: p.name, hat: p.hat, outfit: p.outfit, pet: p.pet,
       killCooldown: p.role === 'impostor' ? p.killCooldown : undefined,
     });
   }
@@ -159,6 +294,12 @@ function buildSnapshot(room) {
     players,
     bodies: room.bodies,
     taskBar: room.totalTasks > 0 ? room.completedTasks / room.totalTasks : 0,
+    sabotage: room.activeSabotage ? {
+      type: room.activeSabotage.type,
+      timeLeft: room.activeSabotage.timeLeft,
+      fixProgress: room.activeSabotage.fixProgress,
+    } : null,
+    doors: room.doors ? room.doors.map(d => ({ id: d.id, closed: d.closed })) : [],
   };
 }
 
@@ -179,7 +320,24 @@ function assignRoles(room) {
     shuffled[i].alive = true;
     shuffled[i].killCooldown = room.settings.killCooldown;
     shuffled[i].canCallEmergency = true;
+    shuffled[i].specialRole = null;
+    shuffled[i].sheriffShots = 0;
+    shuffled[i].engineerVents = 0;
+    shuffled[i].vitalsCooldown = 0;
   }
+
+  // Assign special crewmate roles if enabled
+  if (room.settings.specialRoles) {
+    const crewmates = shuffled.filter(p => p.role === 'crewmate');
+    const shuffledCrew = crewmates.sort(() => Math.random() - 0.5);
+    const roles = ['sheriff', 'engineer', 'scientist'];
+    for (let i = 0; i < Math.min(roles.length, shuffledCrew.length); i++) {
+      shuffledCrew[i].specialRole = roles[i];
+      if (roles[i] === 'sheriff') shuffledCrew[i].sheriffShots = 1;
+      if (roles[i] === 'engineer') shuffledCrew[i].engineerVents = 3;
+    }
+  }
+
   room.previousImpostors = new Set(shuffled.filter(p => p.role === 'impostor').map(p => p.id));
 }
 
@@ -191,19 +349,20 @@ function assignTasks(room) {
   room.totalTasks = crewmates.length * taskCount;
   room.completedTasks = 0;
 
+  const taskDefs = getTaskDefs(room);
   for (const player of crewmates) {
-    const shuffled = [...TASK_DEFINITIONS].sort(() => Math.random() - 0.5);
+    const shuffled = [...taskDefs].sort(() => Math.random() - 0.5);
     player.tasks = shuffled.slice(0, taskCount).map(t => ({ ...t, completed: false }));
   }
 
   for (const player of impostors) {
-    const shuffled = [...TASK_DEFINITIONS].sort(() => Math.random() - 0.5);
+    const shuffled = [...taskDefs].sort(() => Math.random() - 0.5);
     player.tasks = shuffled.slice(0, taskCount).map(t => ({ ...t, completed: false }));
   }
 }
 
 function spawnPlayers(room) {
-  const sp = MAP.spawnPoint;
+  const sp = getMap(room).spawnPoint;
   for (const [, player] of room.players) {
     player.x = sp.x + (Math.random() - 0.5) * 100;
     player.y = sp.y + (Math.random() - 0.5) * 100;
@@ -245,7 +404,22 @@ function endGame(room, winner, reason) {
     roles[p.id] = { name: p.name, color: p.color, role: p.role, alive: p.alive };
   }
 
-  io.to(room.code).emit('gameOver', { winner, reason, roles });
+  // Build end-game stats
+  const stats = { kills: {}, tasksCompleted: {} };
+  for (const [, p] of room.players) {
+    if (room.gameStats && room.gameStats[p.id] && room.gameStats[p.id].kills) {
+      stats.kills[p.id] = { name: p.name, color: p.color, count: room.gameStats[p.id].kills };
+    }
+    if (p.role === 'crewmate') {
+      const done = p.tasks.filter(t => t.completed).length;
+      if (done > 0) {
+        stats.tasksCompleted[p.id] = { name: p.name, color: p.color, count: done };
+      }
+    }
+  }
+  room.gameStats = {};
+
+  io.to(room.code).emit('gameOver', { winner, reason, roles, stats });
 }
 
 function startGameLoop(room) {
@@ -256,11 +430,57 @@ function startGameLoop(room) {
       if (player.role === 'impostor' && player.killCooldown > 0) {
         player.killCooldown = Math.max(0, player.killCooldown - TICK_RATE / 1000);
       }
+      if (player.vitalsCooldown > 0) {
+        player.vitalsCooldown = Math.max(0, player.vitalsCooldown - TICK_RATE / 1000);
+      }
+    }
+
+    // Sabotage cooldown
+    if (room.sabotageCooldown > 0) {
+      room.sabotageCooldown = Math.max(0, room.sabotageCooldown - TICK_RATE / 1000);
+    }
+
+    // Sabotage timer countdown
+    if (room.activeSabotage && room.activeSabotage.timeLeft > 0) {
+      room.activeSabotage.timeLeft -= TICK_RATE / 1000;
+      if (room.activeSabotage.timeLeft <= 0) {
+        // Sabotage timer expired — impostors win
+        endGame(room, 'impostors', `${room.activeSabotage.type.toUpperCase()} sabotage was not fixed in time!`);
+        return;
+      }
+    }
+
+    // Reactor hold check — if nobody is holding, progress resets
+    if (room.activeSabotage && room.activeSabotage.type === 'reactor') {
+      const stations = getMap(room).sabotageFixStations.reactor;
+      let holdingA = false, holdingB = false;
+      for (const [, p] of room.players) {
+        if (!p.alive || p.role === 'impostor') continue;
+        if (distance(p, stations[0]) < SABOTAGE_FIX_RANGE && p.holdingReactor) holdingA = true;
+        if (distance(p, stations[1]) < SABOTAGE_FIX_RANGE && p.holdingReactor) holdingB = true;
+      }
+      if (holdingA && holdingB) {
+        room.activeSabotage.fixProgress = (room.activeSabotage.fixProgress || 0) + TICK_RATE / 1000;
+        if (room.activeSabotage.fixProgress >= 3) {
+          clearSabotage(room);
+        }
+      } else {
+        room.activeSabotage.fixProgress = 0;
+      }
     }
 
     const snapshot = buildSnapshot(room);
     io.to(room.code).emit('gameState', snapshot);
   }, TICK_RATE);
+}
+
+function clearSabotage(room) {
+  room.activeSabotage = null;
+  room.sabotageCooldown = SABOTAGE_COOLDOWN;
+  for (const [, p] of room.players) {
+    p.holdingReactor = false;
+  }
+  io.to(room.code).emit('sabotageFixed');
 }
 
 function startMeeting(room, callerId, body) {
@@ -269,12 +489,19 @@ function startMeeting(room, callerId, body) {
   room.reportedBody = body || null;
   room.votes.clear();
   room.bodies = [];
+  // Clear sabotage on meeting
+  if (room.activeSabotage) {
+    room.activeSabotage = null;
+    room.sabotageCooldown = SABOTAGE_COOLDOWN;
+    for (const [, p] of room.players) p.holdingReactor = false;
+    io.to(room.code).emit('sabotageFixed');
+  }
 
-  const sp = MAP.spawnPoint;
+  const spM = getMap(room).spawnPoint;
   for (const [, player] of room.players) {
     if (player.alive) {
-      player.x = sp.x + (Math.random() - 0.5) * 100;
-      player.y = sp.y + (Math.random() - 0.5) * 100;
+      player.x = spM.x + (Math.random() - 0.5) * 100;
+      player.y = spM.y + (Math.random() - 0.5) * 100;
     }
   }
 
@@ -348,11 +575,11 @@ function tallyVotes(room) {
 
   room.phase = 'results';
   io.to(room.code).emit('votingResults', {
-    votes: voteMap,
+    votes: room.settings.anonymousVotes ? {} : voteMap,
     ejected: ejectedId,
     ejectedName,
     ejectedColor,
-    ejectedRole,
+    ejectedRole: room.settings.confirmEjects !== false ? ejectedRole : null,
   });
 
   setTimeout(() => {
@@ -405,6 +632,8 @@ io.on('connection', (socket) => {
         crewmateVision: 1.0,
         impostorVision: 1.5,
         taskCount: 5,
+        specialRoles: false,
+        mapName: 'alpha',
       },
       players: new Map(),
       bodies: [],
@@ -416,6 +645,11 @@ io.on('connection', (socket) => {
       meetingTimer: null,
       votingTimer: null,
       loopInterval: null,
+      activeSabotage: null,
+      sabotageCooldown: 0,
+      doors: MAP.doors.map(d => ({ ...d, closed: false, cooldown: 0, timer: null })),
+      isPublic: false,
+      spectators: new Set(),
     };
 
     const player = {
@@ -424,6 +658,7 @@ io.on('connection', (socket) => {
       color: COLORS[0],
       hat: 'none',
       outfit: 'none',
+      pet: 'none',
       avatar: null,
       x: MAP.spawnPoint.x,
       y: MAP.spawnPoint.y,
@@ -441,7 +676,7 @@ io.on('connection', (socket) => {
 
     socket.emit('roomCreated', {
       code,
-      player: { id: player.id, name: player.name, color: player.color, hat: player.hat, outfit: player.outfit, avatar: player.avatar },
+      player: { id: player.id, name: player.name, color: player.color, hat: player.hat, outfit: player.outfit, pet: player.pet, avatar: player.avatar},
       settings: room.settings,
     });
   });
@@ -467,15 +702,17 @@ io.on('connection', (socket) => {
       return;
     }
 
+    const joinMap = getMap(room);
     const player = {
       id: socket.id,
       name: name.trim().substring(0, 12),
       color: getAvailableColor(room),
       hat: 'none',
       outfit: 'none',
+      pet: 'none',
       avatar: null,
-      x: MAP.spawnPoint.x,
-      y: MAP.spawnPoint.y,
+      x: joinMap.spawnPoint.x,
+      y: joinMap.spawnPoint.y,
       role: null,
       alive: true,
       tasks: [],
@@ -488,7 +725,7 @@ io.on('connection', (socket) => {
     socket.join(roomCode);
 
     const playersList = [...room.players.values()].map(p => ({
-      id: p.id, name: p.name, color: p.color, hat: p.hat, outfit: p.outfit, avatar: p.avatar,
+      id: p.id, name: p.name, color: p.color, hat: p.hat, outfit: p.outfit, pet: p.pet, avatar: p.avatar,
     }));
 
     socket.emit('roomJoined', {
@@ -522,6 +759,10 @@ io.on('connection', (socket) => {
       room.settings.numImpostors = 1;
     }
 
+    // Rebuild doors for the selected map
+    const currentMap = getMap(room);
+    room.doors = currentMap.doors.map(d => ({ ...d, closed: false, cooldown: 0, timer: null }));
+
     assignRoles(room);
     assignTasks(room);
     spawnPlayers(room);
@@ -535,9 +776,10 @@ io.on('connection', (socket) => {
 
       io.to(id).emit('gameStarted', {
         role: player.role,
+        specialRole: player.specialRole,
         tasks: player.tasks,
         players: [...room.players.values()].map(p => ({
-          id: p.id, name: p.name, color: p.color, hat: p.hat, outfit: p.outfit, avatar: p.avatar, x: p.x, y: p.y, alive: true,
+          id: p.id, name: p.name, color: p.color, hat: p.hat, outfit: p.outfit, pet: p.pet, avatar: p.avatar, x: p.x, y: p.y, alive: true,
           killCooldown: p.role === 'impostor' ? p.killCooldown : undefined,
         })),
         otherImpostors: player.role === 'impostor' ? otherImpostors : [],
@@ -570,14 +812,15 @@ io.on('connection', (socket) => {
       targetY = player.y + (dy / dist) * maxDist;
     }
 
-    if (isWalkable(targetX, targetY)) {
+    const currentMap = getMap(room);
+    if (isWalkable(targetX, targetY, currentMap)) {
       player.x = targetX;
       player.y = targetY;
     } else {
       // Try sliding along axes
-      if (isWalkable(targetX, player.y)) {
+      if (isWalkable(targetX, player.y, currentMap)) {
         player.x = targetX;
-      } else if (isWalkable(player.x, targetY)) {
+      } else if (isWalkable(player.x, targetY, currentMap)) {
         player.y = targetY;
       }
     }
@@ -632,7 +875,22 @@ io.on('connection', (socket) => {
     };
     room.bodies.push(body);
 
-    io.to(room.code).emit('playerKilled', { victimId: victim.id, body });
+    // Track kill stats
+    if (!room.gameStats) room.gameStats = {};
+    if (!room.gameStats[player.id]) room.gameStats[player.id] = { kills: 0 };
+    room.gameStats[player.id].kills = (room.gameStats[player.id].kills || 0) + 1;
+
+    const killAnimTypes = ['tongue', 'knife', 'snap'];
+    const animType = killAnimTypes[Math.floor(Math.random() * killAnimTypes.length)];
+
+    io.to(room.code).emit('playerKilled', {
+      victimId: victim.id,
+      body,
+      killerId: player.id,
+      killerColor: player.color,
+      victimColor: victim.color,
+      animType,
+    });
 
     // Snap impostor to victim's position
     player.x = victim.x;
@@ -670,14 +928,93 @@ io.on('connection', (socket) => {
     if (!roomCode) return;
     const room = rooms.get(roomCode);
     if (!room || room.phase !== 'playing') return;
+    if (room.activeSabotage) return; // Can't call emergency during sabotage
     const player = room.players.get(socket.id);
     if (!player || !player.alive || !player.canCallEmergency) return;
 
-    const d = distance(player, MAP.emergencyButton);
+    const d = distance(player, getMap(room).emergencyButton);
     if (d > EMERGENCY_RANGE) return;
 
     player.canCallEmergency = false;
     startMeeting(room, socket.id, null);
+  });
+
+  // --- SABOTAGE ---
+  socket.on('triggerSabotage', ({ type }) => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    const room = rooms.get(roomCode);
+    if (!room || room.phase !== 'playing') return;
+    const player = room.players.get(socket.id);
+    if (!player || !player.alive || player.role !== 'impostor') return;
+    if (room.activeSabotage) return; // already active
+    if (room.sabotageCooldown > 0) return;
+    if (!['lights', 'o2', 'reactor'].includes(type)) return;
+
+    room.activeSabotage = {
+      type,
+      timeLeft: SABOTAGE_TIMERS[type],
+      fixProgress: 0,
+    };
+    // For lights: track which switches are fixed (5 switches)
+    if (type === 'lights') {
+      room.activeSabotage.switches = [false, false, false, false, false];
+    }
+    // For O2: two code panels
+    if (type === 'o2') {
+      room.activeSabotage.panelsFixed = [false, false];
+    }
+
+    io.to(room.code).emit('sabotageStarted', {
+      type,
+      timeLeft: SABOTAGE_TIMERS[type],
+    });
+  });
+
+  // --- FIX SABOTAGE ---
+  socket.on('fixSabotage', ({ stationIndex, action }) => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    const room = rooms.get(roomCode);
+    if (!room || room.phase !== 'playing' || !room.activeSabotage) return;
+    const player = room.players.get(socket.id);
+    if (!player || !player.alive) return;
+
+    const sab = room.activeSabotage;
+    const stations = getMap(room).sabotageFixStations[sab.type];
+    if (!stations || !stations[stationIndex]) return;
+
+    const station = stations[stationIndex];
+    if (distance(player, station) > SABOTAGE_FIX_RANGE) return;
+
+    if (sab.type === 'lights') {
+      // Toggle switch
+      if (action === 'toggleSwitch' && typeof stationIndex === 'number') {
+        // stationIndex is 0 for lights (single panel), action data has switchIndex
+        // Actually for lights we just track completion
+        sab.fixProgress = (sab.fixProgress || 0) + 1;
+        if (sab.fixProgress >= 5) {
+          clearSabotage(room);
+        }
+      }
+    } else if (sab.type === 'o2') {
+      sab.panelsFixed[stationIndex] = true;
+      if (sab.panelsFixed[0] && sab.panelsFixed[1]) {
+        clearSabotage(room);
+      } else {
+        io.to(room.code).emit('sabotageProgress', {
+          type: 'o2',
+          panelsFixed: [...sab.panelsFixed],
+        });
+      }
+    } else if (sab.type === 'reactor') {
+      // Hold reactor button
+      if (action === 'hold') {
+        player.holdingReactor = true;
+      } else if (action === 'release') {
+        player.holdingReactor = false;
+      }
+    }
   });
 
   // --- VOTE ---
@@ -703,6 +1040,37 @@ io.on('connection', (socket) => {
     if (room.votes.size >= aliveCount) {
       clearTimeout(room.votingTimer);
       tallyVotes(room);
+    }
+  });
+
+  // --- MEETING CHAT ---
+  socket.on('meetingChat', ({ message }) => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    const room = rooms.get(roomCode);
+    if (!room || (room.phase !== 'meeting' && room.phase !== 'voting')) return;
+    const player = room.players.get(socket.id);
+    if (!player) return;
+    const text = String(message).trim().slice(0, 200);
+    if (!text) return;
+
+    const chatData = {
+      senderId: socket.id,
+      name: player.name,
+      color: player.color,
+      message: text,
+      ghost: !player.alive,
+    };
+
+    // Living players see only living chat; dead see all
+    for (const [, p] of room.players) {
+      if (!player.alive && !p.alive) {
+        // Ghost to ghost
+        io.to(p.id).emit('meetingChatMessage', chatData);
+      } else if (player.alive) {
+        // Living player's message goes to everyone
+        io.to(p.id).emit('meetingChatMessage', chatData);
+      }
     }
   });
 
@@ -750,6 +1118,8 @@ io.on('connection', (socket) => {
     room.votes.clear();
     room.totalTasks = 0;
     room.completedTasks = 0;
+    room.activeSabotage = null;
+    room.sabotageCooldown = 0;
 
     for (const [, player] of room.players) {
       player.role = null;
@@ -757,12 +1127,14 @@ io.on('connection', (socket) => {
       player.tasks = [];
       player.killCooldown = 0;
       player.canCallEmergency = true;
-      player.x = MAP.spawnPoint.x;
-      player.y = MAP.spawnPoint.y;
+      player.holdingReactor = false;
+      const lobbyMap = getMap(room);
+      player.x = lobbyMap.spawnPoint.x;
+      player.y = lobbyMap.spawnPoint.y;
     }
 
     const playersList = [...room.players.values()].map(p => ({
-      id: p.id, name: p.name, color: p.color, hat: p.hat, outfit: p.outfit, avatar: p.avatar,
+      id: p.id, name: p.name, color: p.color, hat: p.hat, outfit: p.outfit, pet: p.pet, avatar: p.avatar,
     }));
 
     io.to(room.code).emit('returnedToLobby', {
@@ -772,8 +1144,89 @@ io.on('connection', (socket) => {
     });
   });
 
+  // --- CLOSE DOOR ---
+  socket.on('closeDoor', ({ doorId }) => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    const room = rooms.get(roomCode);
+    if (!room || room.phase !== 'playing') return;
+    const player = room.players.get(socket.id);
+    if (!player || !player.alive || player.role !== 'impostor') return;
+
+    const door = room.doors.find(d => d.id === doorId);
+    if (!door || door.closed || door.cooldown > 0) return;
+
+    door.closed = true;
+    io.to(room.code).emit('doorStateChanged', { doorId, closed: true });
+
+    // Auto-open after 10 seconds
+    door.timer = setTimeout(() => {
+      door.closed = false;
+      door.cooldown = 30; // 30s cooldown
+      io.to(room.code).emit('doorStateChanged', { doorId, closed: false });
+
+      // Cooldown countdown
+      const cooldownInterval = setInterval(() => {
+        door.cooldown--;
+        if (door.cooldown <= 0) {
+          door.cooldown = 0;
+          clearInterval(cooldownInterval);
+        }
+      }, 1000);
+    }, 10000);
+  });
+
+  // --- EMOTE ---
+  socket.on('emote', ({ emoteId }) => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    const room = rooms.get(roomCode);
+    if (!room || room.phase !== 'playing') return;
+    const player = room.players.get(socket.id);
+    if (!player || !player.alive) return;
+    if (typeof emoteId !== 'number' || emoteId < 0 || emoteId > 5) return;
+    socket.to(roomCode).emit('playerEmote', { playerId: socket.id, emoteId });
+  });
+
+  // --- QUICK CHAT ---
+  socket.on('quickChat', ({ messageId }) => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    const room = rooms.get(roomCode);
+    if (!room || room.phase !== 'playing') return;
+    const player = room.players.get(socket.id);
+    if (!player || !player.alive) return;
+    if (typeof messageId !== 'number' || messageId < 0 || messageId > 7) return;
+    socket.to(roomCode).emit('playerQuickChat', { playerId: socket.id, messageId });
+  });
+
+  // --- UPDATE SETTINGS ---
+  socket.on('updateSettings', (newSettings) => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    const room = rooms.get(roomCode);
+    if (!room || room.phase !== 'lobby') return;
+    if (room.host !== socket.id) return; // only host can change
+
+    const s = room.settings;
+    if (newSettings.numImpostors !== undefined) s.numImpostors = Math.min(3, Math.max(1, parseInt(newSettings.numImpostors) || 1));
+    if (newSettings.killCooldown !== undefined) s.killCooldown = Math.min(60, Math.max(5, parseInt(newSettings.killCooldown) || 30));
+    if (newSettings.playerSpeed !== undefined) s.playerSpeed = Math.min(6, Math.max(1, parseInt(newSettings.playerSpeed) || 3));
+    if (newSettings.taskCount !== undefined) s.taskCount = Math.min(10, Math.max(1, parseInt(newSettings.taskCount) || 5));
+    if (newSettings.discussionTime !== undefined) s.discussionTime = Math.min(300, Math.max(5, parseInt(newSettings.discussionTime) || 15));
+    if (newSettings.votingTime !== undefined) s.votingTime = Math.min(300, Math.max(15, parseInt(newSettings.votingTime) || 120));
+    if (newSettings.crewmateVision !== undefined) s.crewmateVision = Math.min(2, Math.max(0.25, parseFloat(newSettings.crewmateVision) || 1));
+    if (newSettings.impostorVision !== undefined) s.impostorVision = Math.min(3, Math.max(0.5, parseFloat(newSettings.impostorVision) || 1.5));
+    if (newSettings.confirmEjects !== undefined) s.confirmEjects = !!newSettings.confirmEjects;
+    if (newSettings.anonymousVotes !== undefined) s.anonymousVotes = !!newSettings.anonymousVotes;
+    if (newSettings.specialRoles !== undefined) s.specialRoles = !!newSettings.specialRoles;
+    if (newSettings.mapName !== undefined) s.mapName = ['alpha', 'beta'].includes(newSettings.mapName) ? newSettings.mapName : 'alpha';
+
+    io.to(roomCode).emit('settingsUpdated', room.settings);
+  });
+
   // --- CHANGE SKIN ---
-  socket.on('changeSkin', ({ hat, outfit }) => {
+  socket.on('changeSkin', ({ hat, outfit, pet }) => {
     const roomCode = socketToRoom.get(socket.id);
     if (!roomCode) return;
     const room = rooms.get(roomCode);
@@ -783,9 +1236,10 @@ io.on('connection', (socket) => {
 
     if (hat !== undefined && HATS.includes(hat)) player.hat = hat;
     if (outfit !== undefined && OUTFITS.includes(outfit)) player.outfit = outfit;
+    if (pet !== undefined && PETS.includes(pet)) player.pet = pet;
 
     socket.to(roomCode).emit('skinChanged', {
-      playerId: socket.id, hat: player.hat, outfit: player.outfit,
+      playerId: socket.id, hat: player.hat, outfit: player.outfit, pet: player.pet,
     });
   });
 
@@ -825,6 +1279,58 @@ io.on('connection', (socket) => {
     io.to(roomCode).emit('colorChanged', { playerId: socket.id, color });
   });
 
+  // --- TOGGLE PUBLIC ROOM ---
+  socket.on('togglePublic', () => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    const room = rooms.get(roomCode);
+    if (!room || room.host !== socket.id) return;
+    room.isPublic = !room.isPublic;
+    socket.emit('publicToggled', { isPublic: room.isPublic });
+  });
+
+  // --- LIST PUBLIC ROOMS ---
+  socket.on('listRooms', () => {
+    const roomList = [];
+    for (const [code, room] of rooms) {
+      if (room.isPublic && room.phase === 'lobby') {
+        const host = room.players.get(room.host);
+        roomList.push({
+          code,
+          hostName: host ? host.name : 'Unknown',
+          playerCount: room.players.size,
+          maxPlayers: room.settings.maxPlayers,
+        });
+      }
+    }
+    socket.emit('roomList', { rooms: roomList });
+  });
+
+  // --- SPECTATE ---
+  socket.on('spectateRoom', ({ code, name }) => {
+    const roomCode = (code || '').toUpperCase().trim();
+    const room = rooms.get(roomCode);
+    if (!room) {
+      socket.emit('joinError', { message: 'Room not found' });
+      return;
+    }
+    socketToRoom.set(socket.id, roomCode);
+    socket.join(roomCode);
+    room.spectators.add(socket.id);
+
+    const pList = [...room.players.values()].map(p => ({
+      id: p.id, name: p.name, color: p.color, hat: p.hat, outfit: p.outfit, pet: p.pet, avatar: p.avatar,
+      x: p.x, y: p.y, alive: p.alive,
+    }));
+    socket.emit('spectateJoined', {
+      code: roomCode,
+      phase: room.phase,
+      players: pList,
+      bodies: room.bodies,
+      settings: room.settings,
+    });
+  });
+
   // --- VENT MOVE ---
   socket.on('ventMove', ({ ventIndex }) => {
     const roomCode = socketToRoom.get(socket.id);
@@ -832,8 +1338,11 @@ io.on('connection', (socket) => {
     const room = rooms.get(roomCode);
     if (!room || room.phase !== 'playing') return;
     const player = room.players.get(socket.id);
-    if (!player || !player.alive || player.role !== 'impostor') return;
-    const vent = MAP.vents[ventIndex];
+    if (!player || !player.alive) return;
+    const isEngineer = player.role === 'crewmate' && player.specialRole === 'engineer';
+    if (player.role !== 'impostor' && !isEngineer) return;
+    if (isEngineer && player.engineerVents <= 0) return;
+    const vent = getMap(room).vents[ventIndex];
     if (!vent) return;
     let dest;
     if (distance(player, vent.a) < 60) dest = vent.b;
@@ -841,7 +1350,139 @@ io.on('connection', (socket) => {
     else return;
     player.x = dest.x;
     player.y = dest.y;
+    if (isEngineer) {
+      player.engineerVents--;
+      socket.emit('engineerVentsLeft', { remaining: player.engineerVents });
+    }
     socket.emit('ventTeleport', { x: dest.x, y: dest.y });
+  });
+
+  // --- SHERIFF KILL ---
+  socket.on('sheriffKill', () => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    const room = rooms.get(roomCode);
+    if (!room || room.phase !== 'playing') return;
+    const player = room.players.get(socket.id);
+    if (!player || !player.alive || player.specialRole !== 'sheriff') return;
+    if (player.sheriffShots <= 0) return;
+
+    player.sheriffShots--;
+    let nearestDist = KILL_RANGE;
+    let target = null;
+    for (const [, other] of room.players) {
+      if (other.id === player.id || !other.alive) continue;
+      const d = distance(player, other);
+      if (d < nearestDist) { nearestDist = d; target = other; }
+    }
+    if (!target) return;
+
+    if (target.role === 'impostor') {
+      // Sheriff correctly identified impostor
+      target.alive = false;
+      room.bodies.push({ playerId: target.id, color: target.color, hat: target.hat, outfit: target.outfit, x: target.x, y: target.y });
+      io.to(room.code).emit('playerKilled', { playerId: target.id, color: target.color, hat: target.hat, outfit: target.outfit, x: target.x, y: target.y, killerId: player.id, animType: 'knife' });
+    } else {
+      // Sheriff killed innocent — sheriff dies
+      player.alive = false;
+      room.bodies.push({ playerId: player.id, color: player.color, hat: player.hat, outfit: player.outfit, x: player.x, y: player.y });
+      io.to(room.code).emit('playerKilled', { playerId: player.id, color: player.color, hat: player.hat, outfit: player.outfit, x: player.x, y: player.y, killerId: player.id, animType: 'snap' });
+    }
+    checkWinConditions(room);
+  });
+
+  // --- VITALS (Scientist) ---
+  socket.on('checkVitals', () => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    const room = rooms.get(roomCode);
+    if (!room || room.phase !== 'playing') return;
+    const player = room.players.get(socket.id);
+    if (!player || !player.alive || player.specialRole !== 'scientist') return;
+    if (player.vitalsCooldown > 0) return;
+
+    player.vitalsCooldown = 30; // 30 second cooldown
+    const vitals = [...room.players.values()].map(p => ({
+      name: p.name, color: p.color, alive: p.alive,
+    }));
+    socket.emit('vitalsData', { vitals });
+  });
+
+  // --- SECURITY CAMERAS ---
+  socket.on('watchCameras', () => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    const room = rooms.get(roomCode);
+    if (!room || room.phase !== 'playing') return;
+    const player = room.players.get(socket.id);
+    if (!player || !player.alive) return;
+    if (distance(player, getMap(room).securityConsole) > 80) return;
+
+    player.watchingCameras = true;
+    io.to(roomCode).emit('cameraWatcher', { watching: true });
+  });
+
+  socket.on('stopWatchCameras', () => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    const room = rooms.get(roomCode);
+    if (!room) return;
+    const player = room.players.get(socket.id);
+    if (!player) return;
+    player.watchingCameras = false;
+    // Check if anyone else is watching
+    const anyWatching = [...room.players.values()].some(p => p.watchingCameras);
+    if (!anyWatching) {
+      io.to(roomCode).emit('cameraWatcher', { watching: false });
+    }
+  });
+
+  socket.on('requestCameraFeed', () => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    const room = rooms.get(roomCode);
+    if (!room || room.phase !== 'playing') return;
+    const player = room.players.get(socket.id);
+    if (!player || !player.watchingCameras) return;
+
+    const feed = getMap(room).cameras.map(cam => {
+      const playersInView = [];
+      for (const [, p] of room.players) {
+        if (!p.alive) continue;
+        if (distance(p, cam) < cam.range) {
+          playersInView.push({ color: p.color, x: p.x, y: p.y, name: p.name });
+        }
+      }
+      return { id: cam.id, name: cam.name, cx: cam.x, cy: cam.y, players: playersInView };
+    });
+    socket.emit('cameraFeed', { feed });
+  });
+
+  // --- ADMIN TABLE ---
+  socket.on('requestAdminTable', () => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    const room = rooms.get(roomCode);
+    if (!room || room.phase !== 'playing') return;
+    const player = room.players.get(socket.id);
+    if (!player || !player.alive) return;
+    const adminMap = getMap(room);
+    if (distance(player, adminMap.adminConsole) > 80) return;
+
+    const occupancy = {};
+    for (const r of adminMap.rooms) {
+      occupancy[r.name] = 0;
+    }
+    for (const [, p] of room.players) {
+      if (!p.alive) continue;
+      for (const r of adminMap.rooms) {
+        if (p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h) {
+          occupancy[r.name]++;
+          break;
+        }
+      }
+    }
+    socket.emit('adminTableData', { occupancy });
   });
 
   // --- REJOIN (mobile reconnection) ---
@@ -871,18 +1512,19 @@ io.on('connection', (socket) => {
     if (room.phase === 'lobby') {
       const pList = [...room.players.values()].map(p => ({ id: p.id, name: p.name, color: p.color, hat: p.hat, outfit: p.outfit, avatar: p.avatar }));
       socket.emit('roomJoined', { code: pending.roomCode, players: pList, settings: room.settings, host: room.host });
-      io.to(pending.roomCode).emit('playerJoined', { id: socket.id, name: playerData.name, color: playerData.color, hat: playerData.hat, outfit: playerData.outfit, avatar: playerData.avatar });
+      io.to(pending.roomCode).emit('playerJoined', { id: socket.id, name: playerData.name, color: playerData.color, hat: playerData.hat, outfit: playerData.outfit, pet: playerData.pet, avatar: playerData.avatar });
     } else {
       // Rejoin mid-game: send gameStarted with current state
       const otherImp = playerData.role === 'impostor'
         ? [...room.players.values()].filter(p => p.role === 'impostor' && p.id !== socket.id).map(p => ({ id: p.id, name: p.name }))
         : [];
       const pList = [...room.players.values()].map(p => ({
-        id: p.id, name: p.name, color: p.color, hat: p.hat, outfit: p.outfit, avatar: p.avatar,
+        id: p.id, name: p.name, color: p.color, hat: p.hat, outfit: p.outfit, pet: p.pet, avatar: p.avatar,
         x: p.x, y: p.y, alive: p.alive, killCooldown: p.role === 'impostor' ? p.killCooldown : undefined,
       }));
       socket.emit('gameStarted', {
         role: playerData.role,
+        specialRole: playerData.specialRole,
         tasks: playerData.tasks,
         players: pList,
         otherImpostors: otherImp,
@@ -891,12 +1533,58 @@ io.on('connection', (socket) => {
     }
   });
 
+  // --- WEBRTC VOICE CHAT SIGNALING ---
+  socket.on('voiceReady', () => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    const room = rooms.get(roomCode);
+    if (!room) return;
+    const player = room.players.get(socket.id);
+    if (!player) return;
+    player.voiceReady = true;
+    // Notify other voice-ready players to initiate peer connection
+    for (const [id, p] of room.players) {
+      if (id !== socket.id && p.voiceReady) {
+        io.to(id).emit('voicePeerJoined', { peerId: socket.id });
+      }
+    }
+  });
+
+  socket.on('voiceOffer', ({ targetId, offer }) => {
+    io.to(targetId).emit('voiceOffer', { fromId: socket.id, offer });
+  });
+
+  socket.on('voiceAnswer', ({ targetId, answer }) => {
+    io.to(targetId).emit('voiceAnswer', { fromId: socket.id, answer });
+  });
+
+  socket.on('voiceIceCandidate', ({ targetId, candidate }) => {
+    io.to(targetId).emit('voiceIceCandidate', { fromId: socket.id, candidate });
+  });
+
+  socket.on('voiceStop', () => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    const room = rooms.get(roomCode);
+    if (!room) return;
+    const player = room.players.get(socket.id);
+    if (player) player.voiceReady = false;
+    io.to(roomCode).emit('voicePeerLeft', { peerId: socket.id });
+  });
+
   // --- DISCONNECT ---
   socket.on('disconnect', () => {
     const roomCode = socketToRoom.get(socket.id);
     if (!roomCode) return;
     const room = rooms.get(roomCode);
     if (!room) return;
+
+    // Clean up spectators
+    if (room.spectators && room.spectators.has(socket.id)) {
+      room.spectators.delete(socket.id);
+      socketToRoom.delete(socket.id);
+      return;
+    }
 
     const player = room.players.get(socket.id);
     if (!player) return;

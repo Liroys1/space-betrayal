@@ -19,7 +19,7 @@ const COLORS = [
   '#6b2fbb', '#71491e', '#38fedb', '#50ef39',
 ];
 
-const MAP = {
+const MAP_ALPHA = {
   width: 2000,
   height: 1500,
   rooms: [
@@ -58,13 +58,119 @@ const MAP = {
   ],
   emergencyButton: { x: 900, y: 425 },
   spawnPoint: { x: 900, y: 425 },
+  doors: [
+    { id: 0, roomName: 'Electrical', x: 630, y: 1020, w: 12, h: 60 },
+    { id: 1, roomName: 'MedBay',     x: 630, y: 420,  w: 12, h: 60 },
+    { id: 2, roomName: 'Security',   x: 630, y: 720,  w: 12, h: 60 },
+    { id: 3, roomName: 'O2',         x: 1150, y: 720, w: 12, h: 60 },
+    { id: 4, roomName: 'Navigation', x: 920, y: 1250, w: 60, h: 12 },
+    { id: 5, roomName: 'Shields',    x: 1150, y: 1020,w: 12, h: 60 },
+  ],
+  cameras: [
+    { id: 0, name: 'Cafeteria',  x: 900,  y: 425  },
+    { id: 1, name: 'MedBay',     x: 500,  y: 450  },
+    { id: 2, name: 'Navigation', x: 900,  y: 1340 },
+    { id: 3, name: 'Electrical', x: 500,  y: 1050 },
+  ],
+  securityConsole: { x: 450, y: 750 },
+  adminConsole: { x: 850, y: 750 },
+  sabotageFixStations: {
+    lights: [{ x: 480, y: 1050, roomName: 'Electrical' }],
+    o2: [
+      { x: 1220, y: 730, roomName: 'O2' },
+      { x: 800, y: 380, roomName: 'Cafeteria' },
+    ],
+    reactor: [
+      { x: 880, y: 100, roomName: 'Upper Engine' },
+      { x: 880, y: 1050, roomName: 'Lower Engine' },
+    ],
+  },
 };
+
+const MAP_BETA = {
+  width: 2000,
+  height: 1500,
+  rooms: [
+    { name: 'Central Hub',    x: 750,  y: 380,  w: 300, h: 260, color: '#1a2a3e' },
+    { name: 'Bridge',         x: 750,  y: 80,   w: 280, h: 200, color: '#1e3040' },
+    { name: 'Reactor Core',   x: 250,  y: 100,  w: 220, h: 180, color: '#2e1e1e' },
+    { name: 'Observatory',    x: 1350, y: 100,  w: 220, h: 180, color: '#1a1a3e' },
+    { name: 'Laboratory',     x: 300,  y: 400,  w: 260, h: 220, color: '#1e2e2e' },
+    { name: 'Armory',         x: 1300, y: 400,  w: 260, h: 220, color: '#3a1e1e' },
+    { name: 'Communications', x: 250,  y: 750,  w: 260, h: 220, color: '#1e2a3e' },
+    { name: 'Cargo Bay',      x: 750,  y: 750,  w: 300, h: 220, color: '#1e1e2e' },
+    { name: 'Life Support',   x: 1350, y: 750,  w: 260, h: 220, color: '#1e3a2a' },
+    { name: 'Greenhouse',     x: 300,  y: 1100, w: 260, h: 220, color: '#1e3a1e' },
+    { name: 'Airlock',        x: 750,  y: 1100, w: 300, h: 200, color: '#2a2a3a' },
+  ],
+  hallways: [
+    { x: 470,  y: 150, w: 280, h: 60 },
+    { x: 1030, y: 150, w: 320, h: 60 },
+    { x: 350,  y: 280, w: 60, h: 120 },
+    { x: 870,  y: 280, w: 60, h: 100 },
+    { x: 1420, y: 280, w: 60, h: 120 },
+    { x: 560,  y: 480, w: 190, h: 60 },
+    { x: 1050, y: 480, w: 250, h: 60 },
+    { x: 380,  y: 620, w: 60, h: 130 },
+    { x: 870,  y: 640, w: 60, h: 110 },
+    { x: 1430, y: 620, w: 60, h: 130 },
+    { x: 510,  y: 830, w: 240, h: 60 },
+    { x: 1050, y: 830, w: 300, h: 60 },
+    { x: 380,  y: 970, w: 60, h: 130 },
+    { x: 870,  y: 970, w: 60, h: 130 },
+  ],
+  vents: [
+    { a: { x: 380, y: 500 }, b: { x: 380, y: 850 } },
+    { a: { x: 1430, y: 500 }, b: { x: 1430, y: 850 } },
+    { a: { x: 880, y: 170 }, b: { x: 880, y: 1190 } },
+  ],
+  emergencyButton: { x: 900, y: 510 },
+  spawnPoint: { x: 900, y: 510 },
+  doors: [
+    { id: 0, roomName: 'Laboratory',     x: 560, y: 500, w: 12, h: 60 },
+    { id: 1, roomName: 'Armory',         x: 1300, y: 500, w: 12, h: 60 },
+    { id: 2, roomName: 'Communications', x: 510, y: 850, w: 12, h: 60 },
+    { id: 3, roomName: 'Life Support',   x: 1350, y: 850, w: 12, h: 60 },
+    { id: 4, roomName: 'Airlock',        x: 890, y: 1100, w: 60, h: 12 },
+    { id: 5, roomName: 'Greenhouse',     x: 400, y: 1100, w: 60, h: 12 },
+  ],
+  cameras: [
+    { id: 0, name: 'Central Hub', x: 900,  y: 510  },
+    { id: 1, name: 'Bridge',      x: 890,  y: 180  },
+    { id: 2, name: 'Cargo Bay',   x: 900,  y: 860  },
+    { id: 3, name: 'Greenhouse',  x: 430,  y: 1210 },
+  ],
+  securityConsole: { x: 350, y: 850 },
+  adminConsole: { x: 900, y: 850 },
+  sabotageFixStations: {
+    lights: [{ x: 380, y: 500, roomName: 'Laboratory' }],
+    o2: [
+      { x: 1450, y: 850, roomName: 'Life Support' },
+      { x: 880, y: 150, roomName: 'Bridge' },
+    ],
+    reactor: [
+      { x: 340, y: 180, roomName: 'Reactor Core' },
+      { x: 430, y: 1200, roomName: 'Greenhouse' },
+    ],
+  },
+};
+
+let MAP = MAP_ALPHA;
 
 // ============================================
 // STATE
 // ============================================
 let myId = null;
 let myRole = null;
+let mySpecialRole = null;
+let engineerVentsLeft = 3;
+let vitalsData = null;
+let vitalsShowUntil = 0;
+let watchingCameras = false;
+let cameraFeed = null;
+let cameraWatcherActive = false;
+let viewingAdminTable = false;
+let adminTableData = null;
 let roomCode = null;
 let isHost = false;
 let gamePhase = 'menu';
@@ -80,10 +186,20 @@ let votedFor = null;
 let voters = new Set();
 let myHatIndex = 0;
 let myOutfitIndex = 0;
+let myPetIndex = 0;
 let myColor = '#c51111';
+// Pet positions (follows player with delay via lerp)
+const petPositions = new Map();
 let lobbyPlayers_data = [];
 let meetingTimerEnd = 0;
 let otherImpostors = [];
+let activeSabotage = null; // { type, timeLeft, fixProgress }
+let sabotageMenuOpen = false;
+let doorStates = []; // [{ id, closed }]
+let floatingMessages = []; // { playerId, text, emoji, startTime, duration }
+
+const EMOTES = ['\u{1F44B}', '\u{1F44D}', '\u2753', '\u2757', '\u2764\uFE0F', '\u{1F480}'];
+const QUICK_MESSAGES = ['Follow me', 'I saw something', 'Where?', 'Trust me', 'Sus!', 'I was in...', 'Help!', "Let's go"];
 let killFlashes = [];
 let roleFlash = { active: false, timer: 0, role: '' };
 let avatarCache = new Map(); // playerId -> HTMLImageElement
@@ -233,6 +349,9 @@ const meetingTimer = document.getElementById('meeting-timer');
 const meetingPhaseLabel = document.getElementById('meeting-phase-label');
 const voteGrid = document.getElementById('vote-grid');
 const skipBtn = document.getElementById('skip-btn');
+const chatMessages = document.getElementById('chat-messages');
+const chatInput = document.getElementById('chat-input');
+const chatSend = document.getElementById('chat-send');
 
 const resultText = document.getElementById('result-text');
 const resultRole = document.getElementById('result-role');
@@ -242,6 +361,8 @@ const winTitle = document.getElementById('win-title');
 const winReason = document.getElementById('win-reason');
 const roleList = document.getElementById('role-list');
 const lobbyBtn = document.getElementById('lobby-btn');
+const leaveBtn = document.getElementById('leave-btn');
+const gameoverWait = document.getElementById('gameover-wait');
 
 const taskTitle = document.getElementById('task-title');
 const taskCanvas = document.getElementById('task-canvas');
@@ -273,13 +394,16 @@ function updateLobbyUI(playerList) {
   lobbyCount.textContent = `${playerList.length} / 10 players`;
   buildColorPicker(playerList.map(p => p.color));
 
+  const settingsPanel = document.getElementById('settings-panel');
   if (socket.id === isHost) {
     startBtn.style.display = 'inline-block';
     startBtn.disabled = playerList.length < 3;
     lobbyWait.style.display = 'none';
+    if (settingsPanel) settingsPanel.style.display = 'block';
   } else {
     startBtn.style.display = 'none';
     lobbyWait.style.display = 'block';
+    if (settingsPanel) settingsPanel.style.display = 'none';
   }
   drawSkinPreview();
 }
@@ -361,31 +485,70 @@ function drawSkinPreview() {
   if (hatId !== 'none') {
     drawHat(c, cx, cy - 4 * s, hatId, s);
   }
+
+  // Pet preview (drawn to the right of character)
+  const petId = PETS[myPetIndex];
+  if (petId !== 'none') {
+    c.save();
+    c.translate(cx + 35, cy + R - 5);
+    drawPetSprite(c, petId, myColor, true);
+    c.restore();
+  }
 }
 
+function updateHatLabel() {
+  const hatId = HATS[myHatIndex];
+  let label = HAT_NAMES[hatId];
+  // Show seasonal badge
+  for (const [season, hats] of Object.entries(SEASONAL_HATS)) {
+    if (hats.includes(hatId)) {
+      const seasonNames = { halloween: 'Halloween', christmas: 'Christmas', spring: 'Spring', summer: 'Summer' };
+      label += ` [${seasonNames[season]}]`;
+      break;
+    }
+  }
+  hatLabel.textContent = label;
+}
 hatPrev.addEventListener('click', () => {
   myHatIndex = (myHatIndex - 1 + HATS.length) % HATS.length;
-  hatLabel.textContent = HAT_NAMES[HATS[myHatIndex]];
+  updateHatLabel();
   drawSkinPreview();
-  socket.emit('changeSkin', { hat: HATS[myHatIndex], outfit: OUTFITS[myOutfitIndex] });
+  socket.emit('changeSkin', { hat: HATS[myHatIndex], outfit: OUTFITS[myOutfitIndex], pet: PETS[myPetIndex] });
 });
 hatNext.addEventListener('click', () => {
   myHatIndex = (myHatIndex + 1) % HATS.length;
-  hatLabel.textContent = HAT_NAMES[HATS[myHatIndex]];
+  updateHatLabel();
   drawSkinPreview();
-  socket.emit('changeSkin', { hat: HATS[myHatIndex], outfit: OUTFITS[myOutfitIndex] });
+  socket.emit('changeSkin', { hat: HATS[myHatIndex], outfit: OUTFITS[myOutfitIndex], pet: PETS[myPetIndex] });
 });
 outfitPrev.addEventListener('click', () => {
   myOutfitIndex = (myOutfitIndex - 1 + OUTFITS.length) % OUTFITS.length;
   outfitLabel.textContent = OUTFIT_NAMES[OUTFITS[myOutfitIndex]];
   drawSkinPreview();
-  socket.emit('changeSkin', { hat: HATS[myHatIndex], outfit: OUTFITS[myOutfitIndex] });
+  socket.emit('changeSkin', { hat: HATS[myHatIndex], outfit: OUTFITS[myOutfitIndex], pet: PETS[myPetIndex] });
 });
 outfitNext.addEventListener('click', () => {
   myOutfitIndex = (myOutfitIndex + 1) % OUTFITS.length;
   outfitLabel.textContent = OUTFIT_NAMES[OUTFITS[myOutfitIndex]];
   drawSkinPreview();
-  socket.emit('changeSkin', { hat: HATS[myHatIndex], outfit: OUTFITS[myOutfitIndex] });
+  socket.emit('changeSkin', { hat: HATS[myHatIndex], outfit: OUTFITS[myOutfitIndex], pet: PETS[myPetIndex] });
+});
+
+// --- PET SELECTION ---
+const petPrev = document.getElementById('pet-prev');
+const petNext = document.getElementById('pet-next');
+const petLabel = document.getElementById('pet-label');
+petPrev.addEventListener('click', () => {
+  myPetIndex = (myPetIndex - 1 + PETS.length) % PETS.length;
+  petLabel.textContent = PET_NAMES[PETS[myPetIndex]];
+  drawSkinPreview();
+  socket.emit('changeSkin', { hat: HATS[myHatIndex], outfit: OUTFITS[myOutfitIndex], pet: PETS[myPetIndex] });
+});
+petNext.addEventListener('click', () => {
+  myPetIndex = (myPetIndex + 1) % PETS.length;
+  petLabel.textContent = PET_NAMES[PETS[myPetIndex]];
+  drawSkinPreview();
+  socket.emit('changeSkin', { hat: HATS[myHatIndex], outfit: OUTFITS[myOutfitIndex], pet: PETS[myPetIndex] });
 });
 
 // --- AVATAR ---
@@ -474,10 +637,13 @@ function darkenColor(hex, factor) {
   return `rgb(${Math.floor(r * factor)},${Math.floor(g * factor)},${Math.floor(b * factor)})`;
 }
 
-const HATS = ['none', 'crown', 'tophat', 'partyhat', 'chef', 'headband', 'flower', 'devil', 'halo', 'beanie', 'antenna', 'pirate', 'glasses', 'sunglasses', 'headphones', 'cap', 'wizard', 'cowboy', 'ninja', 'santa'];
+const HATS = ['none', 'crown', 'tophat', 'partyhat', 'chef', 'headband', 'flower', 'devil', 'halo', 'beanie', 'antenna', 'pirate', 'glasses', 'sunglasses', 'headphones', 'cap', 'wizard', 'cowboy', 'ninja', 'santa', 'witch', 'elfhat', 'bunnyears', 'pumpkin'];
+const SEASONAL_HATS = { halloween: ['witch', 'pumpkin', 'devil'], christmas: ['santa', 'elfhat'], spring: ['bunnyears', 'flower'], summer: ['sunglasses', 'cap'] };
 const OUTFITS = ['none', 'suit', 'labcoat', 'military', 'scarf', 'cape', 'toolbelt', 'astronaut', 'hoodie', 'police', 'pirate_outfit', 'ninja_outfit'];
-const HAT_NAMES = { none: 'None', crown: 'Crown', tophat: 'Top Hat', partyhat: 'Party Hat', chef: 'Chef Hat', headband: 'Headband', flower: 'Flower', devil: 'Devil Horns', halo: 'Halo', beanie: 'Beanie', antenna: 'Antenna', pirate: 'Pirate Hat', glasses: 'Glasses', sunglasses: 'Sunglasses', headphones: 'Headphones', cap: 'Cap', wizard: 'Wizard Hat', cowboy: 'Cowboy Hat', ninja: 'Ninja Mask', santa: 'Santa Hat' };
+const HAT_NAMES = { none: 'None', crown: 'Crown', tophat: 'Top Hat', partyhat: 'Party Hat', chef: 'Chef Hat', headband: 'Headband', flower: 'Flower', devil: 'Devil Horns', halo: 'Halo', beanie: 'Beanie', antenna: 'Antenna', pirate: 'Pirate Hat', glasses: 'Glasses', sunglasses: 'Sunglasses', headphones: 'Headphones', cap: 'Cap', wizard: 'Wizard Hat', cowboy: 'Cowboy Hat', ninja: 'Ninja Mask', santa: 'Santa Hat', witch: 'Witch Hat', elfhat: 'Elf Hat', bunnyears: 'Bunny Ears', pumpkin: 'Pumpkin' };
 const OUTFIT_NAMES = { none: 'None', suit: 'Suit', labcoat: 'Lab Coat', military: 'Military', scarf: 'Scarf', cape: 'Cape', toolbelt: 'Tool Belt', astronaut: 'Astronaut', hoodie: 'Hoodie', police: 'Police', pirate_outfit: 'Pirate', ninja_outfit: 'Ninja' };
+const PETS = ['none', 'mini_crewmate', 'dog', 'cat', 'robot', 'alien', 'hamster'];
+const PET_NAMES = { none: 'None', mini_crewmate: 'Mini Crewmate', dog: 'Dog', cat: 'Cat', robot: 'Robot', alien: 'Alien', hamster: 'Hamster' };
 
 function drawHat(c, x, y, hatType, scale) {
   const s = scale || 1;
@@ -746,6 +912,82 @@ function drawHat(c, x, y, hatType, scale) {
       c.fillStyle = '#fff';
       c.fillRect(x - R * 0.7, y - R * 0.6, R * 1.4, 5 * s);
       break;
+    case 'witch':
+      // Tall witch hat - purple/black
+      c.fillStyle = '#2a0845';
+      c.beginPath();
+      c.moveTo(x - R * 0.8, y - R * 0.5);
+      c.lineTo(x, y - R * 2.2);
+      c.lineTo(x + R * 0.8, y - R * 0.5);
+      c.closePath();
+      c.fill();
+      // Brim
+      c.fillStyle = '#1a0530';
+      c.beginPath();
+      c.ellipse(x, y - R * 0.5, R * 1.0, R * 0.2, 0, 0, Math.PI * 2);
+      c.fill();
+      // Buckle
+      c.fillStyle = '#ffd700';
+      c.fillRect(x - 3 * s, y - R * 0.85, 6 * s, 6 * s);
+      break;
+    case 'elfhat':
+      // Green elf hat with bell
+      c.fillStyle = '#228B22';
+      c.beginPath();
+      c.moveTo(x - R * 0.6, y - R * 0.55);
+      c.quadraticCurveTo(x + R * 0.2, y - R * 1.6, x + R * 0.9, y - R * 1.0);
+      c.lineTo(x + R * 0.6, y - R * 0.55);
+      c.closePath();
+      c.fill();
+      // Bell
+      c.fillStyle = '#ffd700';
+      c.beginPath(); c.arc(x + R * 0.85, y - R * 1.0, 3 * s, 0, Math.PI * 2); c.fill();
+      // Red trim
+      c.fillStyle = '#cc0000';
+      c.fillRect(x - R * 0.65, y - R * 0.6, R * 1.3, 4 * s);
+      break;
+    case 'bunnyears':
+      // Two tall bunny ears
+      c.fillStyle = '#fff';
+      c.beginPath();
+      c.ellipse(x - R * 0.35, y - R * 1.3, R * 0.18, R * 0.6, -0.1, 0, Math.PI * 2);
+      c.fill();
+      c.beginPath();
+      c.ellipse(x + R * 0.35, y - R * 1.3, R * 0.18, R * 0.6, 0.1, 0, Math.PI * 2);
+      c.fill();
+      // Inner ear pink
+      c.fillStyle = '#ffb6c1';
+      c.beginPath();
+      c.ellipse(x - R * 0.35, y - R * 1.3, R * 0.1, R * 0.4, -0.1, 0, Math.PI * 2);
+      c.fill();
+      c.beginPath();
+      c.ellipse(x + R * 0.35, y - R * 1.3, R * 0.1, R * 0.4, 0.1, 0, Math.PI * 2);
+      c.fill();
+      break;
+    case 'pumpkin':
+      // Pumpkin head topper
+      c.fillStyle = '#ff6600';
+      c.beginPath();
+      c.arc(x, y - R * 0.9, R * 0.5, 0, Math.PI * 2);
+      c.fill();
+      // Stem
+      c.fillStyle = '#2d5a1e';
+      c.fillRect(x - 2 * s, y - R * 1.4, 4 * s, R * 0.3);
+      // Face
+      c.fillStyle = '#000';
+      c.beginPath(); // eyes
+      c.moveTo(x - R * 0.25, y - R * 1.0);
+      c.lineTo(x - R * 0.15, y - R * 0.85);
+      c.lineTo(x - R * 0.35, y - R * 0.85);
+      c.closePath();
+      c.fill();
+      c.beginPath();
+      c.moveTo(x + R * 0.25, y - R * 1.0);
+      c.lineTo(x + R * 0.35, y - R * 0.85);
+      c.lineTo(x + R * 0.15, y - R * 0.85);
+      c.closePath();
+      c.fill();
+      break;
   }
   c.restore();
 }
@@ -946,12 +1188,24 @@ function pointInAnyRect(px, py, rects) {
 function isWalkable(x, y) {
   const m = PLAYER_RADIUS * 0.6;
   const allRects = [...MAP.rooms, ...MAP.hallways];
-  return (
+  if (!(
     pointInAnyRect(x - m, y - m, allRects) &&
     pointInAnyRect(x + m, y - m, allRects) &&
     pointInAnyRect(x - m, y + m, allRects) &&
     pointInAnyRect(x + m, y + m, allRects)
-  );
+  )) return false;
+
+  // Check closed doors
+  for (const mapDoor of MAP.doors) {
+    const ds = doorStates.find(d => d.id === mapDoor.id);
+    if (ds && ds.closed) {
+      if (x + m > mapDoor.x && x - m < mapDoor.x + mapDoor.w &&
+          y + m > mapDoor.y && y - m < mapDoor.y + mapDoor.h) {
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 // ============================================
@@ -987,16 +1241,67 @@ document.addEventListener('keydown', e => {
         openTask(nearestTask); // impostors can fake tasks
       }
     }
-    if (e.key.toLowerCase() === 'v' && myRole === 'impostor' && me.alive) {
-      // Find nearest vent
-      const VENT_RANGE = 60;
-      for (let vi = 0; vi < MAP.vents.length; vi++) {
-        const v = MAP.vents[vi];
-        if (distance(me, v.a) < VENT_RANGE || distance(me, v.b) < VENT_RANGE) {
-          socket.emit('ventMove', { ventIndex: vi });
-          break;
+    if (e.key.toLowerCase() === 'v' && me.alive) {
+      const canVentKb = myRole === 'impostor' || (mySpecialRole === 'engineer' && engineerVentsLeft > 0);
+      if (canVentKb) {
+        const VENT_RANGE = 60;
+        for (let vi = 0; vi < MAP.vents.length; vi++) {
+          const v = MAP.vents[vi];
+          if (distance(me, v.a) < VENT_RANGE || distance(me, v.b) < VENT_RANGE) {
+            socket.emit('ventMove', { ventIndex: vi });
+            break;
+          }
         }
       }
+    }
+    if (e.key.toLowerCase() === 'q' && mySpecialRole === 'sheriff' && myRole === 'crewmate' && me.alive) {
+      socket.emit('sheriffKill');
+    }
+    if (e.key.toLowerCase() === 't' && mySpecialRole === 'scientist' && myRole === 'crewmate' && me.alive) {
+      socket.emit('checkVitals');
+    }
+    if (e.key.toLowerCase() === 'c' && me.alive) {
+      if (watchingCameras) {
+        watchingCameras = false; cameraFeed = null;
+        socket.emit('stopWatchCameras');
+      } else if (distance(me, MAP.securityConsole) < 80) {
+        watchingCameras = true;
+        socket.emit('watchCameras');
+      }
+    }
+    if (e.key.toLowerCase() === 'x' && myRole === 'impostor' && me.alive && !activeSabotage) {
+      sabotageMenuOpen = !sabotageMenuOpen;
+    }
+    if (e.key.toLowerCase() === 'g' && myRole === 'impostor' && me.alive) {
+      const DOOR_RANGE = 80;
+      for (const mapDoor of MAP.doors) {
+        const ds = doorStates.find(d => d.id === mapDoor.id);
+        if (!ds || !ds.closed) {
+          const doorCx = mapDoor.x + mapDoor.w / 2;
+          const doorCy = mapDoor.y + mapDoor.h / 2;
+          if (distance(me, { x: doorCx, y: doorCy }) < DOOR_RANGE) {
+            socket.emit('closeDoor', { doorId: mapDoor.id });
+            break;
+          }
+        }
+      }
+    }
+    if (e.key.toLowerCase() === 'f' && me.alive && activeSabotage && myRole !== 'impostor') {
+      const stations = MAP.sabotageFixStations[activeSabotage.type];
+      if (stations) {
+        for (let si = 0; si < stations.length; si++) {
+          if (distance(me, stations[si]) < 80) {
+            handleSabotageFix(si);
+            break;
+          }
+        }
+      }
+    }
+    // Emote wheel: number keys 1-6
+    if (me.alive && e.key >= '1' && e.key <= '6') {
+      const emoteId = parseInt(e.key) - 1;
+      socket.emit('emote', { emoteId });
+      floatingMessages.push({ playerId: myId, emoji: EMOTES[emoteId], startTime: Date.now(), duration: 2500 });
     }
   }
 });
@@ -1033,11 +1338,90 @@ canvas.addEventListener('click', (e) => {
             }
           }
         }
+        else if (btn.action === 'sabotage') {
+          sabotageMenuOpen = !sabotageMenuOpen;
+        }
+        else if (btn.action === 'fixSabotage') {
+          handleSabotageFix(btn.stationIndex);
+        }
+        else if (btn.action === 'closeDoor') {
+          socket.emit('closeDoor', { doorId: btn.doorId });
+        }
+        else if (btn.action === 'sheriffKill') {
+          socket.emit('sheriffKill');
+        }
+        else if (btn.action === 'checkVitals') {
+          socket.emit('checkVitals');
+        }
+        else if (btn.action === 'watchCameras') {
+          watchingCameras = true;
+          socket.emit('watchCameras');
+        }
+        else if (btn.action === 'stopCameras') {
+          watchingCameras = false;
+          cameraFeed = null;
+          socket.emit('stopWatchCameras');
+        }
+        else if (btn.action === 'adminTable') {
+          viewingAdminTable = !viewingAdminTable;
+          if (viewingAdminTable) socket.emit('requestAdminTable');
+        }
         break;
       }
     }
   }
+
+  // Check sabotage menu clicks
+  if (sabotageMenuOpen && window._sabotageMenuButtons) {
+    for (const btn of window._sabotageMenuButtons) {
+      if (e.clientX >= btn.x && e.clientX <= btn.x + btn.w &&
+          e.clientY >= btn.y && e.clientY <= btn.y + btn.h) {
+        socket.emit('triggerSabotage', { type: btn.type });
+        sabotageMenuOpen = false;
+        return;
+      }
+    }
+    // Click outside menu closes it
+    sabotageMenuOpen = false;
+  }
 });
+
+function handleSabotageFix(stationIndex) {
+  if (!activeSabotage) return;
+
+  if (activeSabotage.type === 'lights') {
+    // Simple: just send fix (server counts 5 clicks)
+    socket.emit('fixSabotage', { stationIndex: 0, action: 'toggleSwitch' });
+  } else if (activeSabotage.type === 'o2') {
+    // Each panel is independently fixable
+    socket.emit('fixSabotage', { stationIndex, action: 'enterCode' });
+  } else if (activeSabotage.type === 'reactor') {
+    // Hold: send hold, then release after brief moment
+    socket.emit('fixSabotage', { stationIndex, action: 'hold' });
+    // Auto-release when player moves away (handled by interval below)
+    if (!window._reactorHoldInterval) {
+      window._reactorHoldInterval = setInterval(() => {
+        const me = players.find(p => p.id === myId);
+        if (!me || !activeSabotage || activeSabotage.type !== 'reactor') {
+          socket.emit('fixSabotage', { stationIndex, action: 'release' });
+          clearInterval(window._reactorHoldInterval);
+          window._reactorHoldInterval = null;
+          return;
+        }
+        const stations = MAP.sabotageFixStations.reactor;
+        let nearStation = false;
+        for (const st of stations) {
+          if (distance(me, st) < 80) { nearStation = true; break; }
+        }
+        if (!nearStation) {
+          socket.emit('fixSabotage', { stationIndex, action: 'release' });
+          clearInterval(window._reactorHoldInterval);
+          window._reactorHoldInterval = null;
+        }
+      }, 200);
+    }
+  }
+}
 
 function findNearestTask(me) {
   let nearest = null;
@@ -1128,30 +1512,51 @@ function render() {
 
     drawSpace();
     drawMap();
+    drawDoors();
     drawEmergencyButton();
     drawVents();
+    drawSabotageFixStations();
+    drawCameraIcons();
     drawTaskLocations();
     drawBodies();
     drawParticles();
     drawPlayers();
+    updateAndDrawPets();
+    drawVoiceIndicators();
+    drawFloatingMessages();
 
     const me = players.find(p => p.id === myId);
-    if (me && me.alive) {
+    if (me && me.alive && !isSpectator) {
       drawVisionMask();
     }
 
     drawKillFlashes();
+    drawSabotageWarning();
     ctx.restore(); // end screen shake
 
+    drawSeasonalDecorations();
     drawHUD();
     drawMinimap();
 
-    if (gamePhase === 'playing') {
+    if (gamePhase === 'playing' && !isSpectator) {
       drawActionButtons();
+      if (sabotageMenuOpen) drawSabotageMenu();
+      if (vitalsData && Date.now() < vitalsShowUntil) drawVitalsOverlay();
+      if (watchingCameras) drawCameraOverlay();
+      if (viewingAdminTable) drawAdminOverlay();
+    }
+    if (isSpectator) {
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.font = "bold 16px 'Exo 2', Arial";
+      ctx.textAlign = 'center';
+      ctx.fillText('SPECTATING', canvas.width / 2, canvas.height - 20);
     }
 
     if (roleFlash.active) {
       drawRoleFlash();
+    }
+    if (killAnim) {
+      drawKillAnimation();
     }
   } else {
     drawMenuBackground();
@@ -2119,11 +2524,236 @@ function drawPlayers() {
   }
 }
 
+function updateAndDrawPets() {
+  const me = players.find(p => p.id === myId);
+
+  for (const player of players) {
+    if (!player.pet || player.pet === 'none') continue;
+    // Skip ghosts from living player's perspective
+    if (!player.alive && me && me.alive) continue;
+
+    let targetX, targetY;
+    if (!player.alive) {
+      // Pet stays at body location
+      const body = bodies.find(b => b.id === player.id);
+      if (body) { targetX = body.x; targetY = body.y; }
+      else continue;
+    } else {
+      targetX = player.x;
+      targetY = player.y;
+    }
+
+    // Lerp pet toward player (follows with delay)
+    let pp = petPositions.get(player.id);
+    if (!pp) {
+      pp = { x: targetX + 25, y: targetY };
+      petPositions.set(player.id, pp);
+    }
+    const lerpSpeed = 0.06;
+    const petOffset = 25; // pet trails behind
+    const anim = getAnimState(player.id);
+    const petTargetX = targetX - (anim.facingRight ? petOffset : -petOffset);
+    const petTargetY = targetY + 5;
+    pp.x += (petTargetX - pp.x) * lerpSpeed;
+    pp.y += (petTargetY - pp.y) * lerpSpeed;
+
+    const s = worldToScreen(pp.x, pp.y);
+    const petBob = Math.sin(Date.now() / 200 + player.id.charCodeAt(0)) * 2;
+
+    ctx.save();
+    ctx.translate(s.x, s.y + petBob);
+    if (!player.alive) ctx.globalAlpha = 0.4;
+
+    drawPetSprite(ctx, player.pet, player.color, anim.facingRight);
+
+    ctx.restore();
+  }
+}
+
+function drawPetSprite(c, petType, ownerColor, facingRight) {
+  const f = facingRight ? 1 : -1;
+  const sc = 0.5; // pet scale
+
+  switch (petType) {
+    case 'mini_crewmate': {
+      // Tiny Among Us crewmate
+      c.fillStyle = ownerColor;
+      c.beginPath();
+      c.arc(0, -4 * sc, 10 * sc, 0, Math.PI * 2);
+      c.fill();
+      // Visor
+      c.fillStyle = '#7ec8e3';
+      c.beginPath();
+      c.ellipse(4 * f * sc, -5 * sc, 5 * sc, 4 * sc, 0, 0, Math.PI * 2);
+      c.fill();
+      // Legs
+      c.fillStyle = darkenColor(ownerColor, 0.7);
+      c.fillRect(-5 * sc, 4 * sc, 4 * sc, 5 * sc);
+      c.fillRect(1 * sc, 4 * sc, 4 * sc, 5 * sc);
+      break;
+    }
+    case 'dog': {
+      // Simple dog shape
+      c.fillStyle = '#c8a060';
+      // Body
+      c.beginPath();
+      c.ellipse(0, 0, 10, 7, 0, 0, Math.PI * 2);
+      c.fill();
+      // Head
+      c.beginPath();
+      c.arc(8 * f, -5, 6, 0, Math.PI * 2);
+      c.fill();
+      // Ears
+      c.fillStyle = '#a07840';
+      c.beginPath();
+      c.arc(12 * f, -10, 3, 0, Math.PI * 2);
+      c.fill();
+      // Eyes
+      c.fillStyle = '#000';
+      c.beginPath();
+      c.arc(10 * f, -6, 1.5, 0, Math.PI * 2);
+      c.fill();
+      // Tail
+      c.strokeStyle = '#c8a060';
+      c.lineWidth = 2;
+      c.beginPath();
+      c.moveTo(-10 * f, -2);
+      c.quadraticCurveTo(-14 * f, -10, -12 * f, -14);
+      c.stroke();
+      break;
+    }
+    case 'cat': {
+      // Simple cat shape
+      c.fillStyle = '#888888';
+      // Body
+      c.beginPath();
+      c.ellipse(0, 0, 9, 6, 0, 0, Math.PI * 2);
+      c.fill();
+      // Head
+      c.beginPath();
+      c.arc(7 * f, -4, 5, 0, Math.PI * 2);
+      c.fill();
+      // Ears (triangles)
+      c.beginPath();
+      c.moveTo(5 * f, -9); c.lineTo(3 * f, -14); c.lineTo(7 * f, -11);
+      c.fill();
+      c.beginPath();
+      c.moveTo(10 * f, -9); c.lineTo(10 * f, -14); c.lineTo(12 * f, -9);
+      c.fill();
+      // Eyes
+      c.fillStyle = '#44cc44';
+      c.beginPath();
+      c.arc(8 * f, -5, 1.5, 0, Math.PI * 2);
+      c.fill();
+      // Tail
+      c.strokeStyle = '#888888';
+      c.lineWidth = 2;
+      c.beginPath();
+      c.moveTo(-9 * f, 0);
+      c.bezierCurveTo(-14 * f, -5, -16 * f, -10, -12 * f, -12);
+      c.stroke();
+      break;
+    }
+    case 'robot': {
+      // Tiny robot
+      c.fillStyle = '#aabbcc';
+      c.fillRect(-6, -8, 12, 12);
+      // Head
+      c.fillStyle = '#889999';
+      c.fillRect(-5, -14, 10, 7);
+      // Eyes
+      c.fillStyle = '#ff0000';
+      c.fillRect(-3, -12, 3, 3);
+      c.fillStyle = '#00ff00';
+      c.fillRect(1, -12, 3, 3);
+      // Antenna
+      c.strokeStyle = '#aabbcc';
+      c.lineWidth = 1;
+      c.beginPath();
+      c.moveTo(0, -14);
+      c.lineTo(0, -18);
+      c.stroke();
+      c.fillStyle = '#ff4444';
+      c.beginPath();
+      c.arc(0, -18, 2, 0, Math.PI * 2);
+      c.fill();
+      // Legs
+      c.fillStyle = '#889999';
+      c.fillRect(-5, 4, 3, 5);
+      c.fillRect(2, 4, 3, 5);
+      break;
+    }
+    case 'alien': {
+      // Green alien
+      c.fillStyle = '#66cc66';
+      // Body
+      c.beginPath();
+      c.ellipse(0, 0, 7, 9, 0, 0, Math.PI * 2);
+      c.fill();
+      // Head (big)
+      c.beginPath();
+      c.ellipse(0, -10, 8, 6, 0, 0, Math.PI * 2);
+      c.fill();
+      // Eyes (big dark)
+      c.fillStyle = '#003300';
+      c.beginPath();
+      c.ellipse(-3, -10, 3, 4, -0.2, 0, Math.PI * 2);
+      c.fill();
+      c.beginPath();
+      c.ellipse(3, -10, 3, 4, 0.2, 0, Math.PI * 2);
+      c.fill();
+      break;
+    }
+    case 'hamster': {
+      // Pudgy hamster
+      c.fillStyle = '#e8c080';
+      // Body
+      c.beginPath();
+      c.ellipse(0, 0, 8, 7, 0, 0, Math.PI * 2);
+      c.fill();
+      // Cheeks
+      c.fillStyle = '#ffbbaa';
+      c.beginPath();
+      c.arc(-5, 0, 3, 0, Math.PI * 2);
+      c.fill();
+      c.beginPath();
+      c.arc(5, 0, 3, 0, Math.PI * 2);
+      c.fill();
+      // Eyes
+      c.fillStyle = '#000';
+      c.beginPath();
+      c.arc(-3, -3, 1.5, 0, Math.PI * 2);
+      c.fill();
+      c.beginPath();
+      c.arc(3, -3, 1.5, 0, Math.PI * 2);
+      c.fill();
+      // Ears
+      c.fillStyle = '#d0a060';
+      c.beginPath();
+      c.arc(-5, -7, 3, 0, Math.PI * 2);
+      c.fill();
+      c.beginPath();
+      c.arc(5, -7, 3, 0, Math.PI * 2);
+      c.fill();
+      // Nose
+      c.fillStyle = '#ff8888';
+      c.beginPath();
+      c.arc(0, -1, 1.5, 0, Math.PI * 2);
+      c.fill();
+      break;
+    }
+  }
+}
+
 function drawVisionMask() {
   const me = players.find(p => p.id === myId);
   if (!me) return;
 
-  const visionMult = myRole === 'impostor' ? (settings.impostorVision || 1.5) : (settings.crewmateVision || 1.0);
+  let visionMult = myRole === 'impostor' ? (settings.impostorVision || 1.5) : (settings.crewmateVision || 1.0);
+  // Lights sabotage reduces crewmate vision drastically
+  if (activeSabotage && activeSabotage.type === 'lights' && myRole !== 'impostor') {
+    visionMult = 0.25;
+  }
   const radius = VISION_RADIUS_BASE * visionMult;
   const s = worldToScreen(me.x, me.y);
 
@@ -2142,6 +2772,219 @@ function drawVisionMask() {
   ctx.arc(s.x, s.y, radius, 0, Math.PI * 2);
   ctx.fillStyle = gradient;
   ctx.fill();
+}
+
+function drawDoors() {
+  for (const mapDoor of MAP.doors) {
+    const ds = doorStates.find(d => d.id === mapDoor.id);
+    const isClosed = ds ? ds.closed : false;
+
+    const s = worldToScreen(mapDoor.x, mapDoor.y);
+    const sw = mapDoor.w;
+    const sh = mapDoor.h;
+
+    if (isClosed) {
+      // Closed door — thick red bar
+      ctx.fillStyle = '#882222';
+      ctx.fillRect(s.x, s.y, sw, sh);
+      ctx.strokeStyle = '#ff4444';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(s.x, s.y, sw, sh);
+
+      // Warning stripes
+      ctx.fillStyle = 'rgba(255, 200, 0, 0.3)';
+      for (let i = 0; i < Math.max(sw, sh); i += 8) {
+        if (sw > sh) {
+          ctx.fillRect(s.x + i, s.y, 4, sh);
+        } else {
+          ctx.fillRect(s.x, s.y + i, sw, 4);
+        }
+      }
+    } else {
+      // Open door — thin outline
+      ctx.strokeStyle = 'rgba(100, 100, 100, 0.3)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(s.x, s.y, sw, sh);
+    }
+  }
+}
+
+function drawFloatingMessages() {
+  const now = Date.now();
+  floatingMessages = floatingMessages.filter(m => now - m.startTime < m.duration);
+
+  for (const msg of floatingMessages) {
+    const player = players.find(p => p.id === msg.playerId);
+    if (!player) continue;
+
+    const s = worldToScreen(player.x, player.y);
+    const elapsed = now - msg.startTime;
+    const t = elapsed / msg.duration;
+    const alpha = t > 0.7 ? (1 - t) / 0.3 : (t < 0.1 ? t / 0.1 : 1);
+    const yOffset = -45 - elapsed * 0.015;
+
+    ctx.globalAlpha = alpha;
+
+    if (msg.emoji) {
+      ctx.font = '24px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(msg.emoji, s.x, s.y + yOffset);
+    } else if (msg.text) {
+      // Speech bubble
+      const textWidth = ctx.measureText(msg.text).width;
+      ctx.font = 'bold 11px Arial';
+      const tw = ctx.measureText(msg.text).width;
+      const bw = tw + 14;
+      const bh = 22;
+      const bx = s.x - bw / 2;
+      const by = s.y + yOffset - bh / 2;
+
+      ctx.fillStyle = 'rgba(0,0,0,0.75)';
+      ctx.beginPath();
+      ctx.roundRect(bx, by, bw, bh, 6);
+      ctx.fill();
+
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      ctx.fillText(msg.text, s.x, s.y + yOffset + 4);
+    }
+
+    ctx.globalAlpha = 1;
+  }
+}
+
+function drawSabotageFixStations() {
+  if (!activeSabotage) return;
+  const stations = MAP.sabotageFixStations[activeSabotage.type];
+  if (!stations) return;
+
+  const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 200);
+
+  for (let i = 0; i < stations.length; i++) {
+    const st = stations[i];
+    const s = worldToScreen(st.x, st.y);
+
+    // Pulsing glow
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, 22 + pulse * 8, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255, 100, 0, ${0.15 + pulse * 0.15})`;
+    ctx.fill();
+
+    // Station icon (wrench shape)
+    ctx.beginPath();
+    ctx.arc(s.x, s.y, 14, 0, Math.PI * 2);
+    ctx.fillStyle = '#ff6600';
+    ctx.fill();
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Fix label
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 10px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('FIX', s.x, s.y + 4);
+
+    // If O2 and panel already fixed, show check
+    if (activeSabotage.type === 'o2' && activeSabotage.panelsFixed && activeSabotage.panelsFixed[i]) {
+      ctx.fillStyle = '#44ff44';
+      ctx.font = 'bold 16px Arial';
+      ctx.fillText('\u2713', s.x, s.y - 18);
+    }
+  }
+}
+
+function drawSabotageWarning() {
+  if (!activeSabotage) return;
+
+  const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 300);
+
+  // Flashing red border
+  ctx.strokeStyle = `rgba(255, 0, 0, ${0.3 + pulse * 0.4})`;
+  ctx.lineWidth = 6;
+  ctx.strokeRect(3, 3, canvas.width - 6, canvas.height - 6);
+
+  // Sabotage type label + timer at top center
+  const labels = { lights: 'LIGHTS SABOTAGED', o2: 'O2 DEPLETING', reactor: 'REACTOR MELTDOWN' };
+  const label = labels[activeSabotage.type] || 'SABOTAGE';
+
+  ctx.fillStyle = `rgba(0, 0, 0, 0.7)`;
+  ctx.fillRect(canvas.width / 2 - 140, 8, 280, 45);
+
+  ctx.fillStyle = `rgb(255, ${Math.floor(80 + pulse * 100)}, ${Math.floor(pulse * 50)})`;
+  ctx.font = 'bold 18px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText(label, canvas.width / 2, 30);
+
+  if (activeSabotage.timeLeft > 0) {
+    const secs = Math.ceil(activeSabotage.timeLeft);
+    ctx.fillStyle = secs <= 10 ? '#ff0000' : '#ffaa00';
+    ctx.font = 'bold 16px Arial';
+    ctx.fillText(`${secs}s`, canvas.width / 2, 48);
+  }
+
+  // Reactor progress bar
+  if (activeSabotage.type === 'reactor' && activeSabotage.fixProgress > 0) {
+    const barW = 200;
+    const progress = Math.min(1, activeSabotage.fixProgress / 3);
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(canvas.width / 2 - barW / 2, 55, barW, 12);
+    ctx.fillStyle = '#44ff44';
+    ctx.fillRect(canvas.width / 2 - barW / 2, 55, barW * progress, 12);
+    ctx.strokeStyle = '#666';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(canvas.width / 2 - barW / 2, 55, barW, 12);
+  }
+}
+
+function drawSabotageMenu() {
+  // Draw sabotage options menu (for impostor)
+  const options = [
+    { type: 'lights', label: 'Lights', desc: 'Cut the lights', color: '#ffcc00' },
+    { type: 'o2', label: 'O2', desc: 'Deplete oxygen (45s)', color: '#00ccff' },
+    { type: 'reactor', label: 'Reactor', desc: 'Meltdown (60s)', color: '#ff4444' },
+  ];
+
+  const menuW = 200;
+  const menuH = options.length * 50 + 20;
+  const mx = canvas.width / 2 - menuW / 2;
+  const my = canvas.height / 2 - menuH / 2;
+
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+  ctx.fillRect(mx, my, menuW, menuH);
+  ctx.strokeStyle = '#ff4444';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(mx, my, menuW, menuH);
+
+  ctx.fillStyle = '#ff4444';
+  ctx.font = 'bold 14px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('SABOTAGE', canvas.width / 2, my + 18);
+
+  window._sabotageMenuButtons = [];
+  for (let i = 0; i < options.length; i++) {
+    const opt = options[i];
+    const bx = mx + 10;
+    const by = my + 28 + i * 50;
+    const bw = menuW - 20;
+    const bh = 40;
+
+    ctx.fillStyle = 'rgba(255,255,255,0.08)';
+    ctx.fillRect(bx, by, bw, bh);
+    ctx.strokeStyle = opt.color;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(bx, by, bw, bh);
+
+    ctx.fillStyle = opt.color;
+    ctx.font = 'bold 13px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText(opt.label, mx + menuW / 2, by + 17);
+    ctx.fillStyle = '#aaa';
+    ctx.font = '10px Arial';
+    ctx.fillText(opt.desc, mx + menuW / 2, by + 32);
+
+    window._sabotageMenuButtons.push({ x: bx, y: by, w: bw, h: bh, type: opt.type });
+  }
 }
 
 function drawKillFlashes() {
@@ -2196,6 +3039,12 @@ function drawHUD() {
     ctx.fillStyle = '#44ff44';
     ctx.fillText('CREWMATE', 20, 32);
     ctx.restore();
+    if (mySpecialRole) {
+      const roleColors = { sheriff: '#ffcc00', engineer: '#00ccff', scientist: '#cc66ff' };
+      ctx.font = "bold 12px 'Exo 2', Arial";
+      ctx.fillStyle = roleColors[mySpecialRole] || '#fff';
+      ctx.fillText(mySpecialRole.toUpperCase(), 20, 48);
+    }
   }
 
   // Kill cooldown (impostor)
@@ -2233,6 +3082,273 @@ function drawHUD() {
       ctx.fillText(prefix + task.type + ' (' + task.roomName + ')', canvas.width - 200, startY + 20 + i * 18);
     });
   }
+}
+
+function drawCameraIcons() {
+  // Draw camera icons on the map + blinking red light if someone is watching
+  for (const cam of MAP.cameras) {
+    const s = worldToScreen(cam.x, cam.y - 30); // offset above ground
+    // Camera body
+    ctx.fillStyle = '#555';
+    ctx.fillRect(s.x - 8, s.y - 6, 16, 12);
+    ctx.fillStyle = '#333';
+    ctx.beginPath();
+    ctx.moveTo(s.x + 8, s.y - 4);
+    ctx.lineTo(s.x + 14, s.y - 8);
+    ctx.lineTo(s.x + 14, s.y + 4);
+    ctx.lineTo(s.x + 8, s.y + 2);
+    ctx.fill();
+
+    // Blinking red light when camera is active
+    if (cameraWatcherActive && Math.sin(Date.now() / 300) > 0) {
+      ctx.fillStyle = '#ff0000';
+      ctx.beginPath();
+      ctx.arc(s.x - 5, s.y - 8, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Draw security console
+  const sc = worldToScreen(MAP.securityConsole.x, MAP.securityConsole.y);
+  ctx.fillStyle = '#334455';
+  ctx.fillRect(sc.x - 12, sc.y - 12, 24, 24);
+  ctx.strokeStyle = '#ff8800';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(sc.x - 12, sc.y - 12, 24, 24);
+  ctx.fillStyle = '#ff8800';
+  ctx.font = '8px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('CAM', sc.x, sc.y + 3);
+
+  // Draw admin console
+  const ac = worldToScreen(MAP.adminConsole.x, MAP.adminConsole.y);
+  ctx.fillStyle = '#334455';
+  ctx.fillRect(ac.x - 12, ac.y - 12, 24, 24);
+  ctx.strokeStyle = '#00aaaa';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(ac.x - 12, ac.y - 12, 24, 24);
+  ctx.fillStyle = '#00aaaa';
+  ctx.font = '8px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('ADMIN', ac.x, ac.y + 3);
+}
+
+function drawCameraOverlay() {
+  if (!watchingCameras || !cameraFeed) return;
+
+  const panelW = Math.min(canvas.width - 40, 500);
+  const panelH = Math.min(canvas.height - 80, 400);
+  const px = canvas.width / 2 - panelW / 2;
+  const py = canvas.height / 2 - panelH / 2;
+
+  // Background
+  ctx.fillStyle = 'rgba(10, 10, 20, 0.95)';
+  ctx.beginPath();
+  ctx.roundRect(px, py, panelW, panelH, 8);
+  ctx.fill();
+  ctx.strokeStyle = '#ff8800';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(px, py, panelW, panelH, 8);
+  ctx.stroke();
+
+  // Title
+  ctx.fillStyle = '#ff8800';
+  ctx.font = "bold 14px 'Exo 2', Arial";
+  ctx.textAlign = 'center';
+  ctx.fillText('SECURITY CAMERAS', px + panelW / 2, py + 20);
+
+  // Static scanline effect
+  ctx.fillStyle = `rgba(255,255,255,${0.02 + Math.random() * 0.02})`;
+  for (let i = 0; i < panelH; i += 3) {
+    ctx.fillRect(px, py + i, panelW, 1);
+  }
+
+  // Draw 4 camera views in a 2x2 grid
+  const camW = (panelW - 30) / 2;
+  const camH = (panelH - 50) / 2;
+  for (let i = 0; i < cameraFeed.length && i < 4; i++) {
+    const cam = cameraFeed[i];
+    const col = i % 2;
+    const row = Math.floor(i / 2);
+    const cx = px + 10 + col * (camW + 10);
+    const cy = py + 30 + row * (camH + 10);
+
+    // Camera viewport
+    ctx.fillStyle = '#0a0a15';
+    ctx.fillRect(cx, cy, camW, camH);
+    ctx.strokeStyle = '#444';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(cx, cy, camW, camH);
+
+    // Camera label
+    ctx.fillStyle = '#ff8800';
+    ctx.font = '10px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText(cam.name, cx + 5, cy + 12);
+
+    // Draw player dots
+    for (const p of cam.players) {
+      const relX = (p.x - cam.cx) / 200; // normalize to camera range
+      const relY = (p.y - cam.cy) / 200;
+      const dotX = cx + camW / 2 + relX * (camW / 2) * 0.8;
+      const dotY = cy + camH / 2 + relY * (camH / 2) * 0.8;
+      if (dotX > cx && dotX < cx + camW && dotY > cy && dotY < cy + camH) {
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(dotX, dotY, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+      }
+    }
+
+    // "REC" indicator
+    if (Math.sin(Date.now() / 500) > 0) {
+      ctx.fillStyle = '#ff0000';
+      ctx.beginPath();
+      ctx.arc(cx + camW - 15, cy + 10, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ff4444';
+      ctx.font = '8px Arial';
+      ctx.textAlign = 'left';
+      ctx.fillText('REC', cx + camW - 10, cy + 13);
+    }
+  }
+
+  // Close hint
+  ctx.fillStyle = '#888';
+  ctx.font = '10px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('Press [C] or EXIT CAM button to close', px + panelW / 2, py + panelH - 5);
+}
+
+function drawAdminOverlay() {
+  if (!viewingAdminTable || !adminTableData) return;
+
+  const rooms = MAP.rooms;
+  const panelW = Math.min(canvas.width - 40, 350);
+  const rowH = 24;
+  const panelH = 40 + rooms.length * rowH;
+  const px = canvas.width / 2 - panelW / 2;
+  const py = canvas.height / 2 - panelH / 2;
+
+  ctx.fillStyle = 'rgba(10, 20, 30, 0.95)';
+  ctx.beginPath();
+  ctx.roundRect(px, py, panelW, panelH, 8);
+  ctx.fill();
+  ctx.strokeStyle = '#00aaaa';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(px, py, panelW, panelH, 8);
+  ctx.stroke();
+
+  ctx.fillStyle = '#00aaaa';
+  ctx.font = "bold 14px 'Exo 2', Arial";
+  ctx.textAlign = 'center';
+  ctx.fillText('ADMIN TABLE', px + panelW / 2, py + 22);
+
+  for (let i = 0; i < rooms.length; i++) {
+    const r = rooms[i];
+    const count = adminTableData[r.name] || 0;
+    const ry = py + 35 + i * rowH;
+
+    ctx.fillStyle = '#aaa';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText(r.name, px + 15, ry + 14);
+
+    // Draw dots for each player in room
+    ctx.textAlign = 'right';
+    if (count > 0) {
+      for (let d = 0; d < count; d++) {
+        ctx.fillStyle = '#44ff44';
+        ctx.beginPath();
+        ctx.arc(px + panelW - 20 - d * 16, ry + 10, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    } else {
+      ctx.fillStyle = '#555';
+      ctx.font = '10px Arial';
+      ctx.fillText('empty', px + panelW - 15, ry + 14);
+    }
+  }
+}
+
+function drawVitalsOverlay() {
+  if (!vitalsData) return;
+  const fadeTime = vitalsShowUntil - Date.now();
+  const alpha = fadeTime < 1000 ? fadeTime / 1000 : 1;
+
+  const panelW = 240;
+  const rowH = 26;
+  const panelH = 40 + vitalsData.length * rowH;
+  const px = canvas.width / 2 - panelW / 2;
+  const py = canvas.height / 2 - panelH / 2;
+
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = 'rgba(20, 10, 40, 0.92)';
+  ctx.beginPath();
+  ctx.roundRect(px, py, panelW, panelH, 10);
+  ctx.fill();
+  ctx.strokeStyle = '#cc66ff';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.roundRect(px, py, panelW, panelH, 10);
+  ctx.stroke();
+
+  ctx.fillStyle = '#cc66ff';
+  ctx.font = "bold 14px 'Exo 2', Arial";
+  ctx.textAlign = 'center';
+  ctx.fillText('VITALS', px + panelW / 2, py + 22);
+
+  for (let i = 0; i < vitalsData.length; i++) {
+    const v = vitalsData[i];
+    const ry = py + 35 + i * rowH;
+
+    // Color dot
+    ctx.fillStyle = v.color;
+    ctx.beginPath();
+    ctx.arc(px + 20, ry + 8, 7, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Name
+    ctx.fillStyle = '#fff';
+    ctx.font = '12px Arial';
+    ctx.textAlign = 'left';
+    ctx.fillText(v.name, px + 35, ry + 12);
+
+    // Status
+    ctx.textAlign = 'right';
+    if (v.alive) {
+      ctx.fillStyle = '#44ff44';
+      ctx.fillText('ALIVE', px + panelW - 15, ry + 12);
+      // Heartbeat line
+      ctx.strokeStyle = '#44ff44';
+      ctx.lineWidth = 1.5;
+      const lx = px + panelW - 80;
+      ctx.beginPath();
+      ctx.moveTo(lx, ry + 8);
+      const beat = Math.sin(Date.now() / 150 + i * 2) * 6;
+      ctx.lineTo(lx + 10, ry + 8 + beat);
+      ctx.lineTo(lx + 15, ry + 8 - beat * 1.5);
+      ctx.lineTo(lx + 25, ry + 8);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = '#ff4444';
+      ctx.fillText('DEAD', px + panelW - 15, ry + 12);
+      // Flatline
+      ctx.strokeStyle = '#ff4444';
+      ctx.lineWidth = 1.5;
+      const lx = px + panelW - 80;
+      ctx.beginPath();
+      ctx.moveTo(lx, ry + 8);
+      ctx.lineTo(lx + 25, ry + 8);
+      ctx.stroke();
+    }
+  }
+  ctx.globalAlpha = 1;
 }
 
 function drawMinimap() {
@@ -2281,12 +3397,13 @@ function drawMinimap() {
 
 function drawActionButtons() {
   const me = players.find(p => p.id === myId);
-  if (!me || !me.alive) { window._actionButtons = []; return; }
+  if (!me) { window._actionButtons = []; return; }
 
   const buttons = [];
+  const isGhost = !me.alive;
 
-  // Kill (impostor, near crewmate, cooldown 0)
-  if (myRole === 'impostor') {
+  // Kill (impostor, near crewmate, cooldown 0) — alive only
+  if (!isGhost && myRole === 'impostor') {
     let hasTarget = false;
     for (const p of players) {
       if (p.id !== myId && p.alive && p.role !== 'impostor' && distance(me, p) < KILL_RANGE) {
@@ -2299,36 +3416,105 @@ function drawActionButtons() {
     }
   }
 
-  // Report
-  let nearBody = false;
-  for (const body of bodies) {
-    if (distance(me, body) < REPORT_RANGE) { nearBody = true; break; }
-  }
-  if (nearBody) {
-    buttons.push({ label: 'REPORT', color: '#ffaa00', action: 'report', key: 'R' });
+  // Report (alive only)
+  if (!isGhost) {
+    let nearBody = false;
+    for (const body of bodies) {
+      if (distance(me, body) < REPORT_RANGE) { nearBody = true; break; }
+    }
+    if (nearBody) {
+      buttons.push({ label: 'REPORT', color: '#ffaa00', action: 'report', key: 'R' });
+    }
   }
 
-  // Use task
+  // Use task (alive + ghost crewmates)
   const nearTask = findNearestTask(me);
   if (nearTask) {
     buttons.push({ label: 'USE', color: '#00aaff', action: 'use', key: 'E' });
   }
 
-  // Emergency
-  if (distance(me, MAP.emergencyButton) < EMERGENCY_RANGE && !nearTask) {
+  // Emergency (alive only)
+  if (!isGhost && distance(me, MAP.emergencyButton) < EMERGENCY_RANGE && !nearTask) {
     buttons.push({ label: 'EMERGENCY', color: '#ff4444', action: 'emergency', key: 'E' });
   }
 
-  // Vent (impostor only)
-  if (myRole === 'impostor') {
+  // Vent (impostor or engineer, alive only)
+  const canVent = myRole === 'impostor' || (mySpecialRole === 'engineer' && engineerVentsLeft > 0);
+  if (!isGhost && canVent) {
     const VENT_RANGE = 60;
     let nearVent = false;
     for (const v of MAP.vents) {
       if (distance(me, v.a) < VENT_RANGE || distance(me, v.b) < VENT_RANGE) { nearVent = true; break; }
     }
     if (nearVent) {
-      buttons.push({ label: 'VENT', color: '#00cc00', action: 'vent', key: 'V' });
+      const ventLabel = mySpecialRole === 'engineer' ? `VENT(${engineerVentsLeft})` : 'VENT';
+      buttons.push({ label: ventLabel, color: '#00cc00', action: 'vent', key: 'V' });
     }
+  }
+
+  if (!isGhost && myRole === 'impostor') {
+    // Sabotage button (impostor, no active sabotage)
+    if (!activeSabotage) {
+      buttons.push({ label: 'SABO', color: '#cc00cc', action: 'sabotage', key: 'X' });
+    }
+
+    // Door button (impostor, near an open door)
+    const DOOR_RANGE = 80;
+    for (const mapDoor of MAP.doors) {
+      const ds = doorStates.find(d => d.id === mapDoor.id);
+      const isClosed = ds ? ds.closed : false;
+      if (!isClosed) {
+        const doorCx = mapDoor.x + mapDoor.w / 2;
+        const doorCy = mapDoor.y + mapDoor.h / 2;
+        if (distance(me, { x: doorCx, y: doorCy }) < DOOR_RANGE) {
+          buttons.push({ label: 'DOOR', color: '#885500', action: 'closeDoor', key: 'G', doorId: mapDoor.id });
+          break;
+        }
+      }
+    }
+  }
+
+  // Fix sabotage (crewmate near fix station, alive only)
+  if (!isGhost && activeSabotage && myRole !== 'impostor') {
+    const stations = MAP.sabotageFixStations[activeSabotage.type];
+    if (stations) {
+      for (let si = 0; si < stations.length; si++) {
+        if (distance(me, stations[si]) < 80) {
+          buttons.push({ label: 'FIX', color: '#ff6600', action: 'fixSabotage', key: 'F', stationIndex: si });
+          break;
+        }
+      }
+    }
+  }
+
+  // Sheriff kill button
+  if (!isGhost && mySpecialRole === 'sheriff' && myRole === 'crewmate') {
+    let hasTarget = false;
+    for (const p of players) {
+      if (p.id !== myId && p.alive && distance(me, p) < KILL_RANGE) { hasTarget = true; break; }
+    }
+    if (hasTarget) {
+      buttons.push({ label: 'SHOOT', color: '#ffcc00', action: 'sheriffKill', key: 'Q' });
+    }
+  }
+
+  // Scientist vitals button
+  if (!isGhost && mySpecialRole === 'scientist' && myRole === 'crewmate') {
+    buttons.push({ label: 'VITALS', color: '#cc66ff', action: 'checkVitals', key: 'T' });
+  }
+
+  // Security cameras (near security console)
+  if (!isGhost && distance(me, MAP.securityConsole) < 80) {
+    if (watchingCameras) {
+      buttons.push({ label: 'EXIT CAM', color: '#ff8800', action: 'stopCameras', key: 'C' });
+    } else {
+      buttons.push({ label: 'CAMS', color: '#ff8800', action: 'watchCameras', key: 'C' });
+    }
+  }
+
+  // Admin table (near admin console)
+  if (!isGhost && distance(me, MAP.adminConsole) < 80) {
+    buttons.push({ label: 'ADMIN', color: '#00aaaa', action: 'adminTable', key: 'T' });
   }
 
   // Draw bottom-right
@@ -2370,6 +3556,160 @@ function drawActionButtons() {
 
   window._actionButtons = buttons;
 }
+
+// ============================================
+// KILL ANIMATION
+// ============================================
+let killAnim = null;
+
+function showKillAnimation(killerColor, victimColor, animType) {
+  killAnim = { startTime: Date.now(), duration: 1200, killerColor, victimColor, animType };
+}
+
+function drawKillAnimation() {
+  if (!killAnim) return;
+  const elapsed = Date.now() - killAnim.startTime;
+  if (elapsed > killAnim.duration) { killAnim = null; return; }
+
+  const t = elapsed / killAnim.duration;
+  let alpha = 1;
+  if (t < 0.1) alpha = t / 0.1;
+  else if (t > 0.8) alpha = (1 - t) / 0.2;
+
+  ctx.fillStyle = `rgba(0, 0, 0, ${alpha * 0.8})`;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const cx = canvas.width / 2;
+  const cy = canvas.height / 2;
+
+  // Draw victim (right side, falling)
+  const victimX = cx + 60;
+  const victimY = cy + (t > 0.4 ? (t - 0.4) * 80 : 0);
+  const victimAlpha = t > 0.6 ? Math.max(0, 1 - (t - 0.6) * 2.5) : 1;
+  ctx.globalAlpha = alpha * victimAlpha;
+  ctx.fillStyle = killAnim.victimColor;
+  ctx.beginPath();
+  ctx.ellipse(victimX, victimY - 10, 22, 28, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // Visor
+  ctx.fillStyle = 'rgba(180,220,255,0.7)';
+  ctx.beginPath();
+  ctx.ellipse(victimX + 12, victimY - 14, 9, 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Draw killer (left side, lunging)
+  const killerX = cx - 60 + (t < 0.4 ? t / 0.4 * 50 : 50);
+  const killerY = cy;
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = killAnim.killerColor;
+  ctx.beginPath();
+  ctx.ellipse(killerX, killerY - 10, 22, 28, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(180,220,255,0.7)';
+  ctx.beginPath();
+  ctx.ellipse(killerX + 12, killerY - 14, 9, 7, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Attack effect based on type
+  if (t > 0.3 && t < 0.7) {
+    const at = (t - 0.3) / 0.4;
+    ctx.globalAlpha = alpha * (1 - at);
+    if (killAnim.animType === 'tongue') {
+      ctx.strokeStyle = killAnim.killerColor;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(killerX + 15, killerY - 5);
+      ctx.quadraticCurveTo(killerX + 40, killerY - 20, victimX - 10, victimY - 10);
+      ctx.stroke();
+    } else if (killAnim.animType === 'knife') {
+      ctx.fillStyle = '#cccccc';
+      const kx = killerX + 20 + at * 30;
+      const ky = killerY - 8;
+      ctx.fillRect(kx, ky, 18, 4);
+      ctx.fillStyle = '#aa5500';
+      ctx.fillRect(kx - 6, ky - 2, 8, 8);
+    } else {
+      // snap — red X
+      ctx.strokeStyle = '#ff0000';
+      ctx.lineWidth = 4;
+      const sx = victimX;
+      const sy = victimY - 10;
+      ctx.beginPath();
+      ctx.moveTo(sx - 12, sy - 12);
+      ctx.lineTo(sx + 12, sy + 12);
+      ctx.moveTo(sx + 12, sy - 12);
+      ctx.lineTo(sx - 12, sy + 12);
+      ctx.stroke();
+    }
+  }
+
+  ctx.globalAlpha = 1;
+}
+
+// ============================================
+// CONFETTI
+// ============================================
+let confettiParticles = [];
+let confettiActive = false;
+
+function startConfetti(color) {
+  confettiParticles = [];
+  confettiActive = true;
+  const colors = [color, '#ffaa00', '#ff66aa', '#66aaff', '#ffff66', '#66ff66'];
+  for (let i = 0; i < 80; i++) {
+    confettiParticles.push({
+      x: Math.random() * window.innerWidth,
+      y: -Math.random() * 300,
+      vx: (Math.random() - 0.5) * 4,
+      vy: Math.random() * 3 + 2,
+      size: Math.random() * 8 + 4,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rotation: Math.random() * 360,
+      rotSpeed: (Math.random() - 0.5) * 10,
+    });
+  }
+  // Stop confetti after 4 seconds
+  setTimeout(() => { confettiActive = false; }, 4000);
+}
+
+function updateAndDrawConfetti() {
+  if (confettiParticles.length === 0) return;
+
+  // Use a fixed overlay canvas on top of the gameover screen
+  const overlay = document.getElementById('confetti-overlay');
+  if (!overlay) return;
+  const cctx = overlay.getContext('2d');
+  overlay.width = window.innerWidth;
+  overlay.height = window.innerHeight;
+  cctx.clearRect(0, 0, overlay.width, overlay.height);
+
+  confettiParticles = confettiParticles.filter(p => p.y < window.innerHeight + 50);
+
+  for (const p of confettiParticles) {
+    p.x += p.vx;
+    p.y += p.vy;
+    p.rotation += p.rotSpeed;
+    p.vy += 0.05; // gravity
+
+    cctx.save();
+    cctx.translate(p.x, p.y);
+    cctx.rotate(p.rotation * Math.PI / 180);
+    cctx.fillStyle = p.color;
+    cctx.fillRect(-p.size / 2, -p.size / 4, p.size, p.size / 2);
+    cctx.restore();
+  }
+
+  if (confettiActive || confettiParticles.length > 0) {
+    requestAnimationFrame(updateAndDrawConfetti);
+  }
+}
+
+// Start confetti rendering loop when particles exist
+const _origStartConfetti = startConfetti;
+startConfetti = function(color) {
+  _origStartConfetti(color);
+  requestAnimationFrame(updateAndDrawConfetti);
+};
 
 function drawRoleFlash() {
   const elapsed = Date.now() - roleFlash.startTime;
@@ -2414,6 +3754,12 @@ function drawRoleFlash() {
     ctx.font = "20px 'Exo 2', Arial";
     ctx.fillStyle = `rgba(150, 255, 150, ${alpha})`;
     ctx.fillText('Complete your tasks. Find the impostor.', canvas.width / 2, canvas.height / 2 + 30);
+    if (mySpecialRole) {
+      const roleNames = { sheriff: 'SHERIFF - You can attempt to kill!', engineer: 'ENGINEER - You can use vents!', scientist: 'SCIENTIST - You can check vitals!' };
+      ctx.font = "bold 18px 'Exo 2', Arial";
+      ctx.fillStyle = `rgba(255, 220, 100, ${alpha})`;
+      ctx.fillText(roleNames[mySpecialRole] || '', canvas.width / 2, canvas.height / 2 + 60);
+    }
   }
 }
 
@@ -3457,12 +4803,14 @@ socket.on('roomCreated', ({ code, player, settings: s }) => {
   gamePhase = 'lobby';
   myHatIndex = 0;
   myOutfitIndex = 0;
+  myPetIndex = 0;
   myAvatarData = null;
   avatarCache.clear();
   avatarLabel.textContent = 'No photo';
   avatarRemoveBtn.style.display = 'none';
   hatLabel.textContent = HAT_NAMES[HATS[0]];
   outfitLabel.textContent = OUTFIT_NAMES[OUTFITS[0]];
+  petLabel.textContent = PET_NAMES[PETS[0]];
   showScreen(lobbyScreen);
   updateLobbyUI([player]);
   if (player.avatar) cacheAvatar(player.id, player.avatar);
@@ -3478,12 +4826,14 @@ socket.on('roomJoined', ({ code, players: pList, settings: s, host }) => {
   gamePhase = 'lobby';
   myHatIndex = 0;
   myOutfitIndex = 0;
+  myPetIndex = 0;
   myAvatarData = null;
   avatarCache.clear();
   avatarLabel.textContent = 'No photo';
   avatarRemoveBtn.style.display = 'none';
   hatLabel.textContent = HAT_NAMES[HATS[0]];
   outfitLabel.textContent = OUTFIT_NAMES[OUTFITS[0]];
+  petLabel.textContent = PET_NAMES[PETS[0]];
   showScreen(lobbyScreen);
   updateLobbyUI(pList);
   pList.forEach(p => { if (p.avatar) cacheAvatar(p.id, p.avatar); });
@@ -3507,11 +4857,12 @@ socket.on('playerJoined', (player) => {
   }
 });
 
-socket.on('skinChanged', ({ playerId, hat, outfit }) => {
+socket.on('skinChanged', ({ playerId, hat, outfit, pet }) => {
   const p = lobbyPlayers_data.find(pl => pl.id === playerId);
   if (p) {
     p.hat = hat;
     p.outfit = outfit;
+    if (pet !== undefined) p.pet = pet;
   }
 });
 
@@ -3546,17 +4897,32 @@ socket.on('hostChanged', ({ hostId }) => {
   }
 });
 
-socket.on('gameStarted', ({ role, tasks, players: pList, otherImpostors: otherImp, settings: s }) => {
+socket.on('gameStarted', ({ role, specialRole, tasks, players: pList, otherImpostors: otherImp, settings: s }) => {
+  // Switch map based on settings
+  MAP = (s.mapName === 'beta') ? MAP_BETA : MAP_ALPHA;
   myRole = role;
+  mySpecialRole = specialRole || null;
+  engineerVentsLeft = 3;
+  vitalsData = null;
+  vitalsShowUntil = 0;
+  watchingCameras = false;
+  cameraFeed = null;
+  viewingAdminTable = false;
+  adminTableData = null;
   myTasks = tasks;
   players = pList;
   settings = s;
   otherImpostors = otherImp || [];
   bodies = [];
   taskBar = 0;
+  petPositions.clear();
   gamePhase = 'playing';
   showScreen(null);
   pList.forEach(p => { if (p.avatar) cacheAvatar(p.id, p.avatar); });
+
+  // Show voice button during gameplay
+  const vb = document.getElementById('voice-btn');
+  if (vb) vb.style.display = 'block';
 
   // Also store role on player objects for impostor identification
   if (myRole === 'impostor') {
@@ -3571,9 +4937,13 @@ socket.on('gameStarted', ({ role, tasks, players: pList, otherImpostors: otherIm
 
   // Show role flash
   roleFlash = { active: true, startTime: Date.now(), role: myRole };
+
+  // Track stats
+  incrementStat('gamesPlayed');
+  if (myRole === 'impostor') incrementStat('timesImpostor');
 });
 
-socket.on('gameState', ({ players: pList, bodies: bList, taskBar: tb }) => {
+socket.on('gameState', ({ players: pList, bodies: bList, taskBar: tb, sabotage: sab, doors: doorData }) => {
   // Update positions but keep local role info
   for (const serverP of pList) {
     const existing = players.find(p => p.id === serverP.id);
@@ -3597,9 +4967,15 @@ socket.on('gameState', ({ players: pList, bodies: bList, taskBar: tb }) => {
   players = players.filter(p => pList.find(sp => sp.id === p.id));
   bodies = bList;
   taskBar = tb;
+  if (sab) {
+    activeSabotage = sab;
+  }
+  if (doorData) {
+    doorStates = doorData;
+  }
 });
 
-socket.on('playerKilled', ({ victimId, body }) => {
+socket.on('playerKilled', ({ victimId, body, killerId, killerColor, victimColor, animType }) => {
   const victim = players.find(p => p.id === victimId);
   if (victim) {
     victim.alive = false;
@@ -3607,13 +4983,17 @@ socket.on('playerKilled', ({ victimId, body }) => {
     spawnParticle(body.x, body.y, 'kill');
     screenShake.trauma = Math.min(1, screenShake.trauma + 0.6);
   }
-  if (victimId === myId) {
+  if (victimId === myId || killerId === myId) {
     screenShake.trauma = 1;
+    // Show kill animation for killer and victim
+    showKillAnimation(killerColor || '#ff0000', victimColor || '#ffffff', animType || 'knife');
   }
 });
 
 socket.on('meetingStarted', ({ callerName, reportedBody, players: meetingPlayers, phase, duration }) => {
   gamePhase = 'meeting';
+  chatMessages.innerHTML = '';
+  chatInput.value = '';
 
   if (reportedBody) {
     meetingHeader.textContent = `${callerName} reported a dead body!`;
@@ -3686,13 +5066,95 @@ socket.on('resumeGame', () => {
   showScreen(null);
 });
 
+socket.on('doorStateChanged', ({ doorId, closed }) => {
+  const ds = doorStates.find(d => d.id === doorId);
+  if (ds) ds.closed = closed;
+  else doorStates.push({ id: doorId, closed });
+});
+
+socket.on('playerEmote', ({ playerId, emoteId }) => {
+  floatingMessages.push({ playerId, emoji: EMOTES[emoteId], startTime: Date.now(), duration: 2500 });
+});
+
+socket.on('playerQuickChat', ({ playerId, messageId }) => {
+  floatingMessages.push({ playerId, text: QUICK_MESSAGES[messageId], startTime: Date.now(), duration: 3000 });
+});
+
+socket.on('sabotageStarted', ({ type, timeLeft }) => {
+  activeSabotage = { type, timeLeft, fixProgress: 0 };
+  sabotageMenuOpen = false;
+  if (typeof playSound === 'function') playSound('alarm');
+});
+
+socket.on('sabotageFixed', () => {
+  activeSabotage = null;
+});
+
+socket.on('sabotageProgress', ({ type, panelsFixed }) => {
+  // Update sabotage fix progress display
+  if (activeSabotage && activeSabotage.type === type) {
+    activeSabotage.panelsFixed = panelsFixed;
+  }
+});
+
+socket.on('engineerVentsLeft', ({ remaining }) => {
+  engineerVentsLeft = remaining;
+});
+
+socket.on('vitalsData', ({ vitals }) => {
+  vitalsData = vitals;
+  vitalsShowUntil = Date.now() + 5000; // show for 5 seconds
+});
+
+socket.on('cameraWatcher', ({ watching }) => {
+  cameraWatcherActive = watching;
+});
+
+socket.on('cameraFeed', ({ feed }) => {
+  cameraFeed = feed;
+});
+
+// Poll camera feed while watching
+setInterval(() => {
+  if (watchingCameras) socket.emit('requestCameraFeed');
+  if (viewingAdminTable) socket.emit('requestAdminTable');
+}, 500);
+
+socket.on('adminTableData', ({ occupancy }) => {
+  adminTableData = occupancy;
+});
+
+socket.on('meetingChatMessage', ({ name, color, message, ghost }) => {
+  const me = players.find(p => p.id === myId);
+  const myAlive = me ? me.alive : false;
+  // Living players don't see ghost messages
+  if (ghost && myAlive) return;
+
+  const div = document.createElement('div');
+  div.className = 'chat-msg' + (ghost ? ' chat-ghost' : '');
+  const nameSpan = document.createElement('span');
+  nameSpan.className = 'chat-name';
+  nameSpan.style.color = color;
+  nameSpan.textContent = name + ':';
+  const textNode = document.createTextNode(' ' + message);
+  div.appendChild(nameSpan);
+  div.appendChild(textNode);
+  chatMessages.appendChild(div);
+  chatMessages.scrollTop = chatMessages.scrollHeight;
+});
+
 socket.on('taskUpdate', ({ taskBar: tb }) => {
   taskBar = tb;
 });
 
-socket.on('gameOver', ({ winner, reason, roles }) => {
+socket.on('gameOver', ({ winner, reason, roles, stats }) => {
   gamePhase = 'gameover';
+  activeSabotage = null;
   showScreen(gameoverScreen);
+  // Hide voice button
+  const vbtn = document.getElementById('voice-btn');
+  if (vbtn) vbtn.style.display = 'none';
+  startConfetti(winner === 'crewmates' ? '#44ff44' : '#ff4444');
 
   gameoverPanel.className = 'gameover-panel ' + winner;
 
@@ -3717,10 +5179,36 @@ socket.on('gameOver', ({ winner, reason, roles }) => {
     roleList.appendChild(li);
   }
 
+  // Show stats
+  let statsEl = document.getElementById('gameover-stats');
+  if (!statsEl) {
+    statsEl = document.createElement('div');
+    statsEl.id = 'gameover-stats';
+    statsEl.style.cssText = 'margin-top:12px;font-size:0.85em;color:#ccc;text-align:center;';
+    roleList.parentNode.insertBefore(statsEl, lobbyBtn.parentNode === roleList.parentNode ? lobbyBtn : null);
+  }
+  statsEl.innerHTML = '';
+  if (stats) {
+    // Top killer
+    const topKiller = Object.values(stats.kills || {}).sort((a, b) => b.count - a.count)[0];
+    if (topKiller) {
+      statsEl.innerHTML += `<div style="margin:4px 0"><span style="color:${topKiller.color}">${escapeHtml(topKiller.name)}</span> — ${topKiller.count} kill${topKiller.count > 1 ? 's' : ''}</div>`;
+    }
+    // Top task completer
+    const topTasker = Object.values(stats.tasksCompleted || {}).sort((a, b) => b.count - a.count)[0];
+    if (topTasker) {
+      statsEl.innerHTML += `<div style="margin:4px 0"><span style="color:${topTasker.color}">${escapeHtml(topTasker.name)}</span> — ${topTasker.count} task${topTasker.count > 1 ? 's' : ''} completed</div>`;
+    }
+  }
+
   if (socket.id === isHost) {
     lobbyBtn.style.display = 'inline-block';
+    leaveBtn.style.display = 'none';
+    gameoverWait.style.display = 'none';
   } else {
     lobbyBtn.style.display = 'none';
+    leaveBtn.style.display = 'inline-block';
+    gameoverWait.style.display = 'block';
   }
 });
 
@@ -3740,8 +5228,10 @@ socket.on('returnedToLobby', ({ players: pList, settings: s, host }) => {
   if (me) {
     myHatIndex = HATS.indexOf(me.hat) >= 0 ? HATS.indexOf(me.hat) : 0;
     myOutfitIndex = OUTFITS.indexOf(me.outfit) >= 0 ? OUTFITS.indexOf(me.outfit) : 0;
-    hatLabel.textContent = HAT_NAMES[HATS[myHatIndex]];
+    myPetIndex = PETS.indexOf(me.pet) >= 0 ? PETS.indexOf(me.pet) : 0;
+    updateHatLabel();
     outfitLabel.textContent = OUTFIT_NAMES[OUTFITS[myOutfitIndex]];
+    petLabel.textContent = PET_NAMES[PETS[myPetIndex]];
     if (me.avatar) {
       myAvatarData = me.avatar;
       avatarLabel.textContent = 'Uploaded!';
@@ -3781,8 +5271,83 @@ startBtn.addEventListener('click', () => {
   socket.emit('startGame');
 });
 
+// Settings change handlers
+['set-impostors', 'set-killcd', 'set-speed', 'set-tasks', 'set-discuss', 'set-voting', 'set-crewvision', 'set-impvision', 'set-confirmeject', 'set-anonvotes', 'set-specialroles', 'set-map'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.addEventListener('change', () => {
+      socket.emit('updateSettings', {
+        numImpostors: parseInt(document.getElementById('set-impostors').value),
+        killCooldown: parseInt(document.getElementById('set-killcd').value),
+        playerSpeed: parseInt(document.getElementById('set-speed').value),
+        taskCount: parseInt(document.getElementById('set-tasks').value),
+        discussionTime: parseInt(document.getElementById('set-discuss').value),
+        votingTime: parseInt(document.getElementById('set-voting').value),
+        crewmateVision: parseFloat(document.getElementById('set-crewvision').value),
+        impostorVision: parseFloat(document.getElementById('set-impvision').value),
+        confirmEjects: document.getElementById('set-confirmeject').value === '1',
+        anonymousVotes: document.getElementById('set-anonvotes').value === '1',
+        specialRoles: document.getElementById('set-specialroles').value === '1',
+        mapName: document.getElementById('set-map').value,
+      });
+    });
+  }
+});
+
+socket.on('settingsUpdated', (s) => {
+  settings = s;
+  // Sync settings UI for non-host
+  const setMap = document.getElementById('set-map');
+  if (setMap && s.mapName) setMap.value = s.mapName;
+  const setSpec = document.getElementById('set-specialroles');
+  if (setSpec) setSpec.value = s.specialRoles ? '1' : '0';
+});
+
 lobbyBtn.addEventListener('click', () => {
   socket.emit('returnToLobby');
+});
+
+leaveBtn.addEventListener('click', () => {
+  sessionStorage.removeItem('sb_room');
+  sessionStorage.removeItem('sb_name');
+  if (voiceEnabled) stopVoiceChat();
+  socket.disconnect();
+  socket.connect();
+  showScreen(menuScreen);
+  gamePhase = 'menu';
+});
+
+// Voice chat button
+const voiceBtn = document.getElementById('voice-btn');
+if (voiceBtn) {
+  voiceBtn.addEventListener('click', () => {
+    if (!voiceEnabled) {
+      initVoiceChat();
+    } else if (voiceMuted) {
+      toggleVoiceMute(); // unmute
+    } else {
+      toggleVoiceMute(); // mute
+    }
+  });
+  // Long press to stop voice entirely
+  let voiceLongPress = null;
+  voiceBtn.addEventListener('mousedown', () => {
+    voiceLongPress = setTimeout(() => { if (voiceEnabled) stopVoiceChat(); }, 1500);
+  });
+  voiceBtn.addEventListener('mouseup', () => clearTimeout(voiceLongPress));
+  voiceBtn.addEventListener('mouseleave', () => clearTimeout(voiceLongPress));
+}
+
+// Meeting chat send
+function sendChatMessage() {
+  const text = chatInput.value.trim();
+  if (!text) return;
+  socket.emit('meetingChat', { message: text });
+  chatInput.value = '';
+}
+chatSend.addEventListener('click', sendChatMessage);
+chatInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); sendChatMessage(); }
 });
 
 // Enter key support
@@ -3841,15 +5406,16 @@ function showMobileControls(show) {
 function updateMobileActionButtons() {
   if (!isMobile) return;
   const me = players.find(p => p.id === myId);
-  if (!me || !me.alive || gamePhase !== 'playing') {
+  if (!me || gamePhase !== 'playing') {
     mobileActions.innerHTML = '';
     return;
   }
 
   const btns = [];
+  const isGhost = !me.alive;
 
-  // Kill button (impostor)
-  if (myRole === 'impostor') {
+  // Kill button (impostor, alive only)
+  if (!isGhost && myRole === 'impostor') {
     let hasTarget = false;
     for (const p of players) {
       if (p.id !== myId && p.alive && p.role !== 'impostor' && distance(me, p) < KILL_RANGE) {
@@ -3861,35 +5427,123 @@ function updateMobileActionButtons() {
     }
   }
 
-  // Report
-  let nearBody = false;
-  for (const body of bodies) {
-    if (distance(me, body) < REPORT_RANGE) { nearBody = true; break; }
-  }
-  if (nearBody) {
-    btns.push({ label: 'REPORT', bg: '#cc8800', action: () => socket.emit('reportBody') });
+  // Report (alive only)
+  if (!isGhost) {
+    let nearBody = false;
+    for (const body of bodies) {
+      if (distance(me, body) < REPORT_RANGE) { nearBody = true; break; }
+    }
+    if (nearBody) {
+      btns.push({ label: 'REPORT', bg: '#cc8800', action: () => socket.emit('reportBody') });
+    }
   }
 
-  // Use / Emergency
+  // Use task (alive + ghost crewmates)
   const nearTask = findNearestTask(me);
   if (nearTask) {
     btns.push({ label: 'USE', bg: '#0088cc', action: () => openTask(nearTask) });
-  } else if (distance(me, MAP.emergencyButton) < EMERGENCY_RANGE) {
+  } else if (!isGhost && distance(me, MAP.emergencyButton) < EMERGENCY_RANGE) {
     btns.push({ label: 'EMERGENCY', bg: '#cc2222', action: () => socket.emit('callEmergency') });
   }
 
-  // Vent (impostor only)
-  if (myRole === 'impostor') {
+  // Vent (impostor or engineer, alive only)
+  const canVentMobile = myRole === 'impostor' || (mySpecialRole === 'engineer' && engineerVentsLeft > 0);
+  if (!isGhost && canVentMobile) {
     const VENT_RANGE = 60;
     for (let vi = 0; vi < MAP.vents.length; vi++) {
       const v = MAP.vents[vi];
       if (distance(me, v.a) < VENT_RANGE || distance(me, v.b) < VENT_RANGE) {
         const ventIdx = vi;
-        btns.push({ label: 'VENT', bg: '#00aa00', action: () => socket.emit('ventMove', { ventIndex: ventIdx }) });
+        const ventLbl = mySpecialRole === 'engineer' ? `VENT(${engineerVentsLeft})` : 'VENT';
+        btns.push({ label: ventLbl, bg: '#00aa00', action: () => socket.emit('ventMove', { ventIndex: ventIdx }) });
         break;
       }
     }
   }
+
+  if (!isGhost && myRole === 'impostor') {
+    // Sabotage (impostor, no active sabotage)
+    if (!activeSabotage) {
+      btns.push({ label: 'SABO', bg: '#aa00aa', action: () => { sabotageMenuOpen = !sabotageMenuOpen; } });
+    }
+
+    // Door (impostor, near an open door)
+    const DOOR_RANGE = 80;
+    for (const mapDoor of MAP.doors) {
+      const ds = doorStates.find(d => d.id === mapDoor.id);
+      const isClosed = ds ? ds.closed : false;
+      if (!isClosed) {
+        const doorCx = mapDoor.x + mapDoor.w / 2;
+        const doorCy = mapDoor.y + mapDoor.h / 2;
+        if (distance(me, { x: doorCx, y: doorCy }) < DOOR_RANGE) {
+          const dId = mapDoor.id;
+          btns.push({ label: 'DOOR', bg: '#885500', action: () => socket.emit('closeDoor', { doorId: dId }) });
+          break;
+        }
+      }
+    }
+  }
+
+  // Fix sabotage (crewmate near station)
+  if (activeSabotage && myRole !== 'impostor') {
+    const stations = MAP.sabotageFixStations[activeSabotage.type];
+    if (stations) {
+      for (let si = 0; si < stations.length; si++) {
+        if (distance(me, stations[si]) < 80) {
+          const idx = si;
+          btns.push({ label: 'FIX', bg: '#ff6600', action: () => handleSabotageFix(idx) });
+          break;
+        }
+      }
+    }
+  }
+
+  // Sheriff shoot button (mobile)
+  if (!isGhost && mySpecialRole === 'sheriff' && myRole === 'crewmate') {
+    let hasTarget = false;
+    for (const p of players) {
+      if (p.id !== myId && p.alive && distance(me, p) < KILL_RANGE) { hasTarget = true; break; }
+    }
+    if (hasTarget) {
+      btns.push({ label: 'SHOOT', bg: '#ccaa00', action: () => socket.emit('sheriffKill') });
+    }
+  }
+
+  // Scientist vitals button (mobile)
+  if (!isGhost && mySpecialRole === 'scientist' && myRole === 'crewmate') {
+    btns.push({ label: 'VITALS', bg: '#aa44dd', action: () => socket.emit('checkVitals') });
+  }
+
+  // Security cameras (mobile)
+  if (!isGhost && distance(me, MAP.securityConsole) < 80) {
+    if (watchingCameras) {
+      btns.push({ label: 'EXIT CAM', bg: '#cc6600', action: () => { watchingCameras = false; cameraFeed = null; socket.emit('stopWatchCameras'); } });
+    } else {
+      btns.push({ label: 'CAMS', bg: '#cc6600', action: () => { watchingCameras = true; socket.emit('watchCameras'); } });
+    }
+  }
+
+  // Admin table (mobile)
+  if (!isGhost && distance(me, MAP.adminConsole) < 80) {
+    btns.push({ label: 'ADMIN', bg: '#008888', action: () => { viewingAdminTable = !viewingAdminTable; if (viewingAdminTable) socket.emit('requestAdminTable'); } });
+  }
+
+  // Quick chat button (always available for alive players)
+  btns.push({ label: 'CHAT', bg: '#336699', action: () => {
+    // Cycle through quick chat messages
+    const msgId = (window._quickChatIdx || 0) % QUICK_MESSAGES.length;
+    window._quickChatIdx = msgId + 1;
+    socket.emit('quickChat', { messageId: msgId });
+    floatingMessages.push({ playerId: myId, text: QUICK_MESSAGES[msgId], startTime: Date.now(), duration: 3000 });
+  }});
+
+  // Emote button
+  btns.push({ label: '\u{1F44B}', bg: '#996633', action: () => {
+    const emoteId = (window._emoteIdx || 0) % EMOTES.length;
+    window._emoteIdx = emoteId + 1;
+    socket.emit('emote', { emoteId });
+    floatingMessages.push({ playerId: myId, emoji: EMOTES[emoteId], startTime: Date.now(), duration: 2500 });
+  }});
 
   // Only rebuild if changed
   const currentLabels = [...mobileActions.children].map(c => c.textContent).join(',');
@@ -3973,6 +5627,192 @@ if (isMobile) {
   // Update mobile action buttons periodically
   setInterval(updateMobileActionButtons, 200);
 }
+
+// ============================================
+// PLAYER STATS & ACHIEVEMENTS (localStorage)
+// ============================================
+function loadStats() {
+  try { return JSON.parse(localStorage.getItem('sb_stats')) || {}; } catch { return {}; }
+}
+function saveStats(stats) {
+  localStorage.setItem('sb_stats', JSON.stringify(stats));
+}
+function incrementStat(key, amount) {
+  const stats = loadStats();
+  stats[key] = (stats[key] || 0) + (amount || 1);
+  saveStats(stats);
+}
+
+const ACHIEVEMENTS = [
+  { id: 'first_blood', name: 'First Blood', desc: 'Get your first kill as impostor', icon: '\u{1F5E1}', check: s => (s.kills || 0) >= 1 },
+  { id: 'serial_killer', name: 'Serial Killer', desc: 'Get 10 total kills', icon: '\u{1F480}', check: s => (s.kills || 0) >= 10 },
+  { id: 'task_master', name: 'Task Master', desc: 'Complete 50 total tasks', icon: '\u{2705}', check: s => (s.tasksCompleted || 0) >= 50 },
+  { id: 'veteran', name: 'Veteran', desc: 'Play 10 games', icon: '\u{1F3AE}', check: s => (s.gamesPlayed || 0) >= 10 },
+  { id: 'winner', name: 'Winner', desc: 'Win 5 games', icon: '\u{1F3C6}', check: s => (s.gamesWon || 0) >= 5 },
+  { id: 'champion', name: 'Champion', desc: 'Win 20 games', icon: '\u{1F451}', check: s => (s.gamesWon || 0) >= 20 },
+  { id: 'detective', name: 'Detective', desc: 'Vote out the impostor 5 times', icon: '\u{1F50D}', check: s => (s.correctVotes || 0) >= 5 },
+  { id: 'survivor', name: 'Survivor', desc: 'Survive 10 games as crewmate', icon: '\u{1F6E1}', check: s => (s.survived || 0) >= 10 },
+  { id: 'imposter_pro', name: 'Master of Deception', desc: 'Win 5 games as impostor', icon: '\u{1F608}', check: s => (s.impostorWins || 0) >= 5 },
+  { id: 'meeting_caller', name: 'Emergency!', desc: 'Call 5 emergency meetings', icon: '\u{1F6A8}', check: s => (s.meetingsCalled || 0) >= 5 },
+  { id: 'social', name: 'Social Butterfly', desc: 'Send 50 chat messages', icon: '\u{1F4AC}', check: s => (s.chatsSent || 0) >= 50 },
+  { id: 'body_finder', name: 'Body Finder', desc: 'Report 10 bodies', icon: '\u{26A0}', check: s => (s.bodiesReported || 0) >= 10 },
+  { id: 'vent_rat', name: 'Vent Rat', desc: 'Use vents 20 times', icon: '\u{1F573}', check: s => (s.ventsUsed || 0) >= 20 },
+  { id: 'saboteur', name: 'Saboteur', desc: 'Trigger 10 sabotages', icon: '\u{26A1}', check: s => (s.sabotages || 0) >= 10 },
+  { id: 'sheriff_star', name: 'Sheriff Star', desc: 'Correctly shoot an impostor as Sheriff', icon: '\u{2B50}', check: s => (s.sheriffHits || 0) >= 1 },
+];
+
+function loadAchievements() {
+  try { return JSON.parse(localStorage.getItem('sb_achievements')) || []; } catch { return []; }
+}
+function saveAchievements(list) {
+  localStorage.setItem('sb_achievements', JSON.stringify(list));
+}
+
+function checkAchievements() {
+  const stats = loadStats();
+  const unlocked = loadAchievements();
+  const newlyUnlocked = [];
+  for (const a of ACHIEVEMENTS) {
+    if (!unlocked.includes(a.id) && a.check(stats)) {
+      unlocked.push(a.id);
+      newlyUnlocked.push(a);
+    }
+  }
+  if (newlyUnlocked.length > 0) {
+    saveAchievements(unlocked);
+    newlyUnlocked.forEach(a => showAchievementToast(a));
+  }
+}
+
+function showAchievementToast(achievement) {
+  const toast = document.createElement('div');
+  toast.className = 'achieve-toast';
+  toast.textContent = `${achievement.icon} Achievement Unlocked: ${achievement.name}`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 4000);
+}
+
+function showStatsPanel() {
+  const stats = loadStats();
+  const content = document.getElementById('stats-content');
+  content.innerHTML = `
+    <div>Games Played: <strong>${stats.gamesPlayed || 0}</strong></div>
+    <div>Games Won: <strong>${stats.gamesWon || 0}</strong></div>
+    <div>Times Impostor: <strong>${stats.timesImpostor || 0}</strong></div>
+    <div>Impostor Wins: <strong>${stats.impostorWins || 0}</strong></div>
+    <div>Total Kills: <strong>${stats.kills || 0}</strong></div>
+    <div>Tasks Completed: <strong>${stats.tasksCompleted || 0}</strong></div>
+    <div>Meetings Called: <strong>${stats.meetingsCalled || 0}</strong></div>
+    <div>Bodies Reported: <strong>${stats.bodiesReported || 0}</strong></div>
+    <div>Vents Used: <strong>${stats.ventsUsed || 0}</strong></div>
+    <div>Sabotages: <strong>${stats.sabotages || 0}</strong></div>
+    <div>Chat Messages: <strong>${stats.chatsSent || 0}</strong></div>
+    <div>Games Survived: <strong>${stats.survived || 0}</strong></div>
+  `;
+  document.getElementById('stats-panel').classList.add('active');
+}
+
+function showAchievementsPanel() {
+  const unlocked = loadAchievements();
+  const content = document.getElementById('achieve-content');
+  content.innerHTML = ACHIEVEMENTS.map(a => {
+    const isUnlocked = unlocked.includes(a.id);
+    return `<div class="achieve-item ${isUnlocked ? '' : 'locked'}">
+      <span class="achieve-icon">${isUnlocked ? a.icon : '\u{1F512}'}</span>
+      <strong>${a.name}</strong> — ${a.desc}
+    </div>`;
+  }).join('');
+  document.getElementById('achieve-panel').classList.add('active');
+}
+
+// --- ROOM BROWSER ---
+document.getElementById('browse-btn').addEventListener('click', () => {
+  socket.emit('listRooms');
+  document.getElementById('browse-panel').classList.add('active');
+});
+document.getElementById('browse-refresh').addEventListener('click', () => {
+  socket.emit('listRooms');
+});
+document.getElementById('browse-close').addEventListener('click', () => {
+  document.getElementById('browse-panel').classList.remove('active');
+});
+
+socket.on('roomList', ({ rooms: roomList }) => {
+  const container = document.getElementById('room-list');
+  if (roomList.length === 0) {
+    container.innerHTML = '<p style="color:#888;text-align:center">No public rooms available</p>';
+    return;
+  }
+  container.innerHTML = roomList.map(r => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;margin:4px 0;background:rgba(255,255,255,0.05);border-radius:6px">
+      <div>
+        <strong style="color:#ffaa00">${r.code}</strong>
+        <span style="color:#888;font-size:0.85em"> by ${r.hostName}</span>
+        <div style="color:#aaa;font-size:0.8em">${r.playerCount}/${r.maxPlayers} players</div>
+      </div>
+      <button class="btn" onclick="document.getElementById('code-input').value='${r.code}';document.getElementById('browse-panel').classList.remove('active')" style="font-size:0.8em;padding:4px 10px">Join</button>
+    </div>
+  `).join('');
+});
+
+// --- SPECTATE ---
+document.getElementById('spectate-btn').addEventListener('click', () => {
+  const code = document.getElementById('code-input').value.trim();
+  const name = document.getElementById('name-input').value.trim() || 'Spectator';
+  if (!code) {
+    document.getElementById('menu-error').textContent = 'Enter a room code to spectate';
+    return;
+  }
+  socket.emit('spectateRoom', { code, name });
+});
+
+let isSpectator = false;
+
+socket.on('spectateJoined', ({ code, phase, players: pList, bodies: bList, settings: s }) => {
+  isSpectator = true;
+  roomCode = code;
+  settings = s;
+  players = pList;
+  bodies = bList;
+  gamePhase = phase === 'lobby' ? 'playing' : phase;
+  myRole = 'spectator';
+  mySpecialRole = null;
+  showScreen(null);
+  pList.forEach(p => { if (p.avatar) cacheAvatar(p.id, p.avatar); });
+});
+
+// --- PUBLIC TOGGLE ---
+document.getElementById('toggle-public-btn').addEventListener('click', () => {
+  socket.emit('togglePublic');
+});
+
+socket.on('publicToggled', ({ isPublic }) => {
+  const btn = document.getElementById('toggle-public-btn');
+  btn.textContent = isPublic ? 'Make Private' : 'Make Public';
+  btn.style.background = isPublic ? 'rgba(68,255,68,0.3)' : '';
+});
+
+document.getElementById('stats-btn').addEventListener('click', showStatsPanel);
+document.getElementById('achieve-btn').addEventListener('click', showAchievementsPanel);
+document.getElementById('stats-close').addEventListener('click', () => {
+  document.getElementById('stats-panel').classList.remove('active');
+});
+document.getElementById('achieve-close').addEventListener('click', () => {
+  document.getElementById('achieve-panel').classList.remove('active');
+});
+
+// Track stats during gameplay
+// (Hook into existing events)
+// Wrap socket.emit to track stats for specific events
+const _origSocketEmit = socket.emit.bind(socket);
+socket.emit = function(event, ...args) {
+  if (event === 'callEmergency') incrementStat('meetingsCalled');
+  if (event === 'reportBody') incrementStat('bodiesReported');
+  if (event === 'ventMove') incrementStat('ventsUsed');
+  if (event === 'triggerSabotage') incrementStat('sabotages');
+  if (event === 'meetingChat') incrementStat('chatsSent');
+  return _origSocketEmit(event, ...args);
+};
 
 // ============================================
 // PROCEDURAL SOUND EFFECTS
@@ -4066,6 +5906,16 @@ function playSound(type) {
         gain.gain.linearRampToValueAtTime(0, now + 1);
         osc.start(now); osc.stop(now + 1);
         break;
+      case 'alarm':
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.setValueAtTime(400, now + 0.15);
+        osc.frequency.setValueAtTime(800, now + 0.3);
+        osc.frequency.setValueAtTime(400, now + 0.45);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.6);
+        osc.start(now); osc.stop(now + 0.6);
+        break;
     }
   } catch (e) { /* audio not supported */ }
 }
@@ -4076,6 +5926,7 @@ socket.off('playerKilled');
 socket.on('playerKilled', (data) => {
   _origOnKilled(data);
   playSound('kill');
+  haptic([100, 50, 100]); // double pulse on kill
 });
 
 const _origOnMeeting = socket.listeners('meetingStarted')[0];
@@ -4083,6 +5934,7 @@ socket.off('meetingStarted');
 socket.on('meetingStarted', (data) => {
   _origOnMeeting(data);
   playSound('meeting');
+  haptic([200]); // single pulse on meeting
 });
 
 const _origOnGameStarted = socket.listeners('gameStarted')[0];
@@ -4097,6 +5949,10 @@ socket.off('votingResults');
 socket.on('votingResults', (data) => {
   _origOnVotingResults(data);
   if (data.ejected !== 'skip') playSound('eject');
+  // Track correct votes
+  if (data.ejectedRole === 'impostor' && data.ejected !== 'skip') {
+    incrementStat('correctVotes');
+  }
 });
 
 const _origOnGameOver = socket.listeners('gameOver')[0];
@@ -4108,15 +5964,328 @@ socket.on('gameOver', (data) => {
     const iWon = (data.winner === 'crewmates' && _me.role !== 'impostor') ||
                  (data.winner === 'impostors' && _me.role === 'impostor');
     playSound(iWon ? 'win' : 'lose');
+
+    // Track end-game stats
+    if (iWon) incrementStat('gamesWon');
+    if (_me.role === 'impostor' && iWon) incrementStat('impostorWins');
+    if (_me.role !== 'impostor' && _me.alive) incrementStat('survived');
+    // Track tasks completed this game
+    if (data.stats && data.stats[myId]) {
+      const myStats = data.stats[myId];
+      if (myStats.tasksCompleted) incrementStat('tasksCompleted', myStats.tasksCompleted);
+      if (myStats.kills) incrementStat('kills', myStats.kills);
+    }
+    checkAchievements();
   }
 });
 
-// Sound on task complete
+// Sound on task complete + stats tracking + haptic
 const _origCloseTask = closeTask;
 closeTask = function(completed) {
-  if (completed) playSound('task');
+  if (completed) { playSound('task'); incrementStat('tasksCompleted'); haptic([50]); }
   _origCloseTask(completed);
 };
+
+// ============================================
+// MOBILE UX IMPROVEMENTS
+// ============================================
+function haptic(pattern) {
+  if (navigator.vibrate) navigator.vibrate(pattern);
+}
+
+// ============================================
+// PROXIMITY VOICE CHAT (WebRTC)
+// ============================================
+const voicePeers = new Map(); // peerId -> { pc, audioEl, stream }
+let localStream = null;
+let voiceEnabled = false;
+let voiceMuted = false;
+const VOICE_MAX_DISTANCE = 300; // max distance to hear someone
+const VOICE_FALLOFF_START = 50; // full volume within this distance
+
+function initVoiceChat() {
+  if (voiceEnabled) return;
+  navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+    .then(stream => {
+      localStream = stream;
+      voiceEnabled = true;
+      voiceMuted = false;
+      socket.emit('voiceReady');
+      updateVoiceUI();
+    })
+    .catch(err => {
+      console.warn('Voice chat unavailable:', err.message);
+    });
+}
+
+function stopVoiceChat() {
+  if (localStream) {
+    localStream.getTracks().forEach(t => t.stop());
+    localStream = null;
+  }
+  voicePeers.forEach((peer, id) => {
+    if (peer.pc) peer.pc.close();
+    if (peer.audioEl) { peer.audioEl.srcObject = null; peer.audioEl.remove(); }
+  });
+  voicePeers.clear();
+  voiceEnabled = false;
+  voiceMuted = false;
+  socket.emit('voiceStop');
+  updateVoiceUI();
+}
+
+function toggleVoiceMute() {
+  if (!voiceEnabled || !localStream) return;
+  voiceMuted = !voiceMuted;
+  localStream.getAudioTracks().forEach(t => { t.enabled = !voiceMuted; });
+  updateVoiceUI();
+}
+
+function createPeerConnection(peerId, isInitiator) {
+  const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+  const pc = new RTCPeerConnection(config);
+
+  if (localStream) {
+    localStream.getTracks().forEach(track => pc.addTrack(track, localStream));
+  }
+
+  pc.onicecandidate = (e) => {
+    if (e.candidate) {
+      socket.emit('voiceIceCandidate', { targetId: peerId, candidate: e.candidate });
+    }
+  };
+
+  pc.ontrack = (e) => {
+    let audioEl = voicePeers.get(peerId)?.audioEl;
+    if (!audioEl) {
+      audioEl = document.createElement('audio');
+      audioEl.autoplay = true;
+      audioEl.style.display = 'none';
+      document.body.appendChild(audioEl);
+    }
+    audioEl.srcObject = e.streams[0];
+    const existing = voicePeers.get(peerId) || {};
+    voicePeers.set(peerId, { ...existing, pc, audioEl, stream: e.streams[0] });
+  };
+
+  pc.onconnectionstatechange = () => {
+    if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
+      removePeer(peerId);
+    }
+  };
+
+  voicePeers.set(peerId, { pc, audioEl: voicePeers.get(peerId)?.audioEl || null, stream: null });
+
+  if (isInitiator) {
+    pc.createOffer()
+      .then(offer => pc.setLocalDescription(offer))
+      .then(() => {
+        socket.emit('voiceOffer', { targetId: peerId, offer: pc.localDescription });
+      });
+  }
+  return pc;
+}
+
+function removePeer(peerId) {
+  const peer = voicePeers.get(peerId);
+  if (peer) {
+    if (peer.pc) peer.pc.close();
+    if (peer.audioEl) { peer.audioEl.srcObject = null; peer.audioEl.remove(); }
+    voicePeers.delete(peerId);
+  }
+}
+
+// Signaling handlers
+socket.on('voicePeerJoined', ({ peerId }) => {
+  if (!voiceEnabled) return;
+  createPeerConnection(peerId, true);
+});
+
+socket.on('voiceOffer', ({ fromId, offer }) => {
+  if (!voiceEnabled) return;
+  const pc = createPeerConnection(fromId, false);
+  pc.setRemoteDescription(new RTCSessionDescription(offer))
+    .then(() => pc.createAnswer())
+    .then(answer => pc.setLocalDescription(answer))
+    .then(() => {
+      socket.emit('voiceAnswer', { targetId: fromId, answer: pc.localDescription });
+    });
+});
+
+socket.on('voiceAnswer', ({ fromId, answer }) => {
+  const peer = voicePeers.get(fromId);
+  if (peer && peer.pc) {
+    peer.pc.setRemoteDescription(new RTCSessionDescription(answer));
+  }
+});
+
+socket.on('voiceIceCandidate', ({ fromId, candidate }) => {
+  const peer = voicePeers.get(fromId);
+  if (peer && peer.pc) {
+    peer.pc.addIceCandidate(new RTCIceCandidate(candidate));
+  }
+});
+
+socket.on('voicePeerLeft', ({ peerId }) => {
+  removePeer(peerId);
+});
+
+// Update volume based on proximity
+function updateVoiceVolumes() {
+  if (!voiceEnabled) return;
+  const me = players.find(p => p.id === myId);
+  if (!me) return;
+
+  const inMeeting = gamePhase === 'meeting' || gamePhase === 'voting';
+
+  voicePeers.forEach((peer, peerId) => {
+    if (!peer.audioEl) return;
+    const other = players.find(p => p.id === peerId);
+    if (!other) { peer.audioEl.volume = 0; return; }
+
+    // Ghost rules: dead can only hear dead
+    if (!me.alive && other.alive) { peer.audioEl.volume = 0; return; }
+    if (me.alive && !other.alive) { peer.audioEl.volume = 0; return; }
+
+    if (inMeeting) {
+      // During meetings, all living players hear each other at full volume
+      peer.audioEl.volume = (me.alive && other.alive) ? 1.0 : ((!me.alive && !other.alive) ? 1.0 : 0);
+    } else {
+      // Proximity-based volume
+      const dist = Math.sqrt((me.x - other.x) ** 2 + (me.y - other.y) ** 2);
+      if (dist <= VOICE_FALLOFF_START) {
+        peer.audioEl.volume = 1.0;
+      } else if (dist >= VOICE_MAX_DISTANCE) {
+        peer.audioEl.volume = 0;
+      } else {
+        peer.audioEl.volume = 1.0 - ((dist - VOICE_FALLOFF_START) / (VOICE_MAX_DISTANCE - VOICE_FALLOFF_START));
+      }
+    }
+  });
+}
+
+// Run volume updates at regular intervals
+setInterval(updateVoiceVolumes, 200);
+
+// Voice UI
+function updateVoiceUI() {
+  const btn = document.getElementById('voice-btn');
+  if (!btn) return;
+  if (!voiceEnabled) {
+    btn.textContent = 'Voice Off';
+    btn.style.background = '#444';
+  } else if (voiceMuted) {
+    btn.textContent = 'Muted';
+    btn.style.background = '#cc3333';
+  } else {
+    btn.textContent = 'Voice On';
+    btn.style.background = '#33aa33';
+  }
+}
+
+// Draw voice indicators above players who are speaking
+function drawVoiceIndicators() {
+  if (!voiceEnabled) return;
+  voicePeers.forEach((peer, peerId) => {
+    if (!peer.audioEl || !peer.stream) return;
+    const other = players.find(p => p.id === peerId);
+    if (!other) return;
+    // Check audio activity via volume
+    if (peer.audioEl.volume > 0) {
+      const s = worldToScreen(other.x, other.y);
+      const pulse = 0.5 + Math.sin(Date.now() / 200) * 0.3;
+      ctx.strokeStyle = `rgba(100, 255, 100, ${pulse})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      // Sound wave arcs above head
+      for (let i = 0; i < 3; i++) {
+        const r = 8 + i * 5;
+        ctx.arc(s.x, s.y - PLAYER_RADIUS - 15, r, -Math.PI * 0.7, -Math.PI * 0.3);
+      }
+      ctx.stroke();
+    }
+  });
+}
+
+// Stop voice chat on game end or leave
+socket.on('gameOver', () => { if (voiceEnabled) stopVoiceChat(); });
+
+// ============================================
+// SEASONAL THEMES
+// ============================================
+function getCurrentSeason() {
+  const month = new Date().getMonth(); // 0-11
+  if (month === 9 || month === 10) return 'halloween';   // Oct-Nov
+  if (month === 11 || month === 0) return 'christmas';    // Dec-Jan
+  if (month >= 2 && month <= 4) return 'spring';          // Mar-May
+  if (month >= 5 && month <= 7) return 'summer';          // Jun-Aug
+  return null;
+}
+
+const currentSeason = getCurrentSeason();
+
+function drawSeasonalDecorations() {
+  if (!currentSeason) return;
+
+  if (currentSeason === 'halloween') {
+    // Spooky orange/purple fog particles
+    const now = Date.now();
+    for (let i = 0; i < 8; i++) {
+      const x = (Math.sin(now / 3000 + i * 1.7) * 0.5 + 0.5) * canvas.width;
+      const y = (Math.cos(now / 2500 + i * 2.3) * 0.5 + 0.5) * canvas.height;
+      ctx.fillStyle = `rgba(255, 120, 0, ${0.04 + Math.sin(now / 1000 + i) * 0.02})`;
+      ctx.beginPath();
+      ctx.arc(x, y, 40 + Math.sin(now / 800 + i) * 15, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (currentSeason === 'christmas') {
+    // Snow particles falling
+    const now = Date.now();
+    for (let i = 0; i < 20; i++) {
+      const seed = i * 137.5;
+      const x = ((seed + now / 20) % canvas.width);
+      const y = ((now / 15 + seed * 3) % canvas.height);
+      const size = 2 + (i % 3);
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+      ctx.beginPath();
+      ctx.arc(x, y, size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  } else if (currentSeason === 'spring') {
+    // Floating petal-like particles
+    const now = Date.now();
+    for (let i = 0; i < 10; i++) {
+      const seed = i * 97.3;
+      const x = ((seed + now / 30) % canvas.width);
+      const y = ((now / 25 + seed * 2) % canvas.height);
+      ctx.fillStyle = `rgba(255, ${180 + (i % 3) * 30}, ${200 + (i % 2) * 50}, 0.4)`;
+      ctx.beginPath();
+      ctx.ellipse(x, y, 4, 2, (now / 1000 + i) % (Math.PI * 2), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  // summer: no extra decorations, just warm colors handled in map draw
+}
+
+// Landscape suggestion for mobile
+if (isMobile) {
+  function checkOrientation() {
+    if (window.innerHeight > window.innerWidth && gamePhase === 'playing') {
+      if (!document.getElementById('landscape-toast')) {
+        const toast = document.createElement('div');
+        toast.id = 'landscape-toast';
+        toast.style.cssText = 'position:fixed;top:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,0.85);color:#ffcc00;padding:8px 16px;border-radius:8px;font-size:0.85em;z-index:9999;pointer-events:none';
+        toast.textContent = 'Rotate to landscape for better gameplay';
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 4000);
+      }
+    }
+  }
+  window.addEventListener('resize', checkOrientation);
+  // Check on game start
+  const _origCheckOr = checkOrientation;
+  socket.on('gameStarted', () => setTimeout(_origCheckOr, 1000));
+}
 
 // ============================================
 // MOBILE LIFECYCLE & RECONNECTION

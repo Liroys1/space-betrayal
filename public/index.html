@@ -129,6 +129,58 @@
     .vote-card .check { margin-left: auto; color: #44ff44; display: none; }
     .vote-card .check.visible { display: inline; }
 
+    /* Meeting Chat */
+    .meeting-chat {
+      margin-top: 12px; border-top: 1px solid #333; padding-top: 10px;
+    }
+    .chat-messages {
+      max-height: 120px; overflow-y: auto; margin-bottom: 8px;
+      font-size: 0.85em; line-height: 1.4;
+    }
+    .chat-messages .chat-msg {
+      padding: 3px 0; word-break: break-word;
+    }
+    .chat-messages .chat-msg .chat-name {
+      font-weight: bold; margin-right: 6px;
+    }
+    .chat-messages .chat-ghost {
+      opacity: 0.5; font-style: italic;
+    }
+    .chat-input-row {
+      display: flex; gap: 6px;
+    }
+    .chat-input-row input {
+      flex: 1; padding: 6px 10px; border-radius: 6px;
+      border: 1px solid #444; background: rgba(255,255,255,0.08); color: #fff;
+      font-size: 0.9em;
+    }
+    .chat-input-row .btn {
+      padding: 6px 14px; font-size: 0.85em;
+    }
+
+    /* Settings */
+    .setting-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 4px 0;
+    }
+    .achieve-toast {
+      position: fixed; top: 60px; left: 50%; transform: translateX(-50%);
+      background: rgba(20, 10, 40, 0.95); color: #ffcc00; border: 2px solid #ffcc00;
+      border-radius: 10px; padding: 10px 20px; font-size: 0.9em; font-weight: bold;
+      z-index: 9999; animation: toastIn 0.5s ease, toastOut 0.5s ease 3.5s forwards;
+      pointer-events: none;
+    }
+    @keyframes toastIn { from { opacity: 0; top: 30px; } to { opacity: 1; top: 60px; } }
+    @keyframes toastOut { from { opacity: 1; } to { opacity: 0; } }
+    .achieve-item { padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .achieve-item.locked { opacity: 0.4; }
+    .achieve-icon { font-size: 1.2em; margin-right: 6px; }
+    .setting-row label { color: #aaa; }
+    .setting-row select {
+      background: rgba(255,255,255,0.1); color: #fff; border: 1px solid #444;
+      border-radius: 4px; padding: 3px 6px; font-size: 0.9em;
+    }
+
     /* Results */
     .result-text { font-size: 1.5em; margin: 20px 0; }
     .result-role { font-size: 1.1em; margin: 10px 0; }
@@ -202,10 +254,12 @@
       display: none; position: fixed; bottom: 30px; right: 20px; z-index: 20;
     }
     .mobile-action-btn {
-      width: 64px; height: 64px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3);
-      font-family: 'Exo 2', sans-serif; font-weight: 700; font-size: 11px; color: #fff;
+      width: 68px; height: 68px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.3);
+      font-family: 'Exo 2', sans-serif; font-weight: 700; font-size: 12px; color: #fff;
       display: flex; align-items: center; justify-content: center; text-align: center;
       margin: 6px; cursor: pointer; touch-action: none; line-height: 1.1;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      user-select: none; -webkit-user-select: none;
     }
 
     @media (max-width: 768px) {
@@ -228,6 +282,7 @@
 </head>
 <body>
   <canvas id="gameCanvas"></canvas>
+  <canvas id="confetti-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1000"></canvas>
 
   <!-- MENU SCREEN -->
   <div id="menu-screen" class="overlay active">
@@ -240,6 +295,41 @@
       <hr class="divider">
       <input type="text" id="code-input" placeholder="Room code" maxlength="6" style="text-transform:uppercase" />
       <button class="btn" id="join-btn">Join Game</button>
+      <button class="btn" id="spectate-btn" style="font-size:0.85em;margin-top:4px">Spectate</button>
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <button class="btn" id="browse-btn" style="font-size:0.85em;padding:6px 14px">Browse Rooms</button>
+        <button class="btn" id="stats-btn" style="font-size:0.85em;padding:6px 14px">Stats</button>
+        <button class="btn" id="achieve-btn" style="font-size:0.85em;padding:6px 14px">Achievements</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS PANEL -->
+  <div id="stats-panel" class="overlay">
+    <div class="panel" style="max-width:360px">
+      <h2>PLAYER STATS</h2>
+      <div id="stats-content" style="text-align:left;font-size:0.9em;line-height:2"></div>
+      <button class="btn" id="stats-close" style="margin-top:12px">Close</button>
+    </div>
+  </div>
+
+  <!-- ROOM BROWSER -->
+  <div id="browse-panel" class="overlay">
+    <div class="panel" style="max-width:400px">
+      <h2>PUBLIC ROOMS</h2>
+      <div id="room-list" style="text-align:left;max-height:350px;overflow-y:auto;font-size:0.9em"></div>
+      <p style="color:#666;font-size:0.8em;margin:8px 0">Only rooms set to Public are shown</p>
+      <button class="btn" id="browse-refresh" style="margin-right:8px">Refresh</button>
+      <button class="btn" id="browse-close">Close</button>
+    </div>
+  </div>
+
+  <!-- ACHIEVEMENTS PANEL -->
+  <div id="achieve-panel" class="overlay">
+    <div class="panel" style="max-width:400px">
+      <h2>ACHIEVEMENTS</h2>
+      <div id="achieve-content" style="text-align:left;font-size:0.85em;max-height:400px;overflow-y:auto"></div>
+      <button class="btn" id="achieve-close" style="margin-top:12px">Close</button>
     </div>
   </div>
 
@@ -269,6 +359,12 @@
           <button class="skin-arrow" id="outfit-next">&#9654;</button>
           <span class="skin-category">Outfit</span>
         </div>
+        <div class="skin-row">
+          <button class="skin-arrow" id="pet-prev">&#9664;</button>
+          <span class="skin-label" id="pet-label">None</span>
+          <button class="skin-arrow" id="pet-next">&#9654;</button>
+          <span class="skin-category">Pet</span>
+        </div>
         <div class="skin-row" style="justify-content:center;gap:8px">
           <input type="file" id="avatar-input" accept="image/*" style="display:none">
           <button class="skin-arrow" id="avatar-upload-btn" style="width:auto;padding:2px 10px;font-size:0.85em">Upload Photo</button>
@@ -281,6 +377,25 @@
 
       <ul class="player-list" id="lobby-players"></ul>
       <p id="lobby-count" style="color:#888;margin:10px 0"></p>
+
+      <!-- Game Settings (host only) -->
+      <div id="settings-panel" style="display:none;text-align:left;background:rgba(0,0,0,0.3);border-radius:8px;padding:12px;margin-bottom:12px;font-size:0.85em">
+        <div style="text-align:center;font-weight:bold;margin-bottom:8px;color:#ffaa00">GAME SETTINGS</div>
+        <div class="setting-row"><label>Impostors:</label><select id="set-impostors"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></div>
+        <div class="setting-row"><label>Kill Cooldown:</label><select id="set-killcd"><option value="10">10s</option><option value="20">20s</option><option value="30" selected>30s</option><option value="45">45s</option></select></div>
+        <div class="setting-row"><label>Player Speed:</label><select id="set-speed"><option value="2">Slow</option><option value="3" selected>Normal</option><option value="4">Fast</option><option value="5">Very Fast</option></select></div>
+        <div class="setting-row"><label>Tasks:</label><select id="set-tasks"><option value="2">2</option><option value="3">3</option><option value="5" selected>5</option><option value="7">7</option></select></div>
+        <div class="setting-row"><label>Discussion:</label><select id="set-discuss"><option value="15" selected>15s</option><option value="30">30s</option><option value="60">60s</option><option value="120">120s</option></select></div>
+        <div class="setting-row"><label>Voting:</label><select id="set-voting"><option value="30">30s</option><option value="60">60s</option><option value="120" selected>120s</option><option value="180">180s</option></select></div>
+        <div class="setting-row"><label>Crew Vision:</label><select id="set-crewvision"><option value="0.5">0.5x</option><option value="1" selected>1x</option><option value="1.5">1.5x</option></select></div>
+        <div class="setting-row"><label>Impostor Vision:</label><select id="set-impvision"><option value="1">1x</option><option value="1.5" selected>1.5x</option><option value="2">2x</option></select></div>
+        <div class="setting-row"><label>Confirm Ejects:</label><select id="set-confirmeject"><option value="1" selected>On</option><option value="0">Off</option></select></div>
+        <div class="setting-row"><label>Anonymous Votes:</label><select id="set-anonvotes"><option value="0" selected>Off</option><option value="1">On</option></select></div>
+        <div class="setting-row"><label>Special Roles:</label><select id="set-specialroles"><option value="0" selected>Off</option><option value="1">On</option></select></div>
+        <div class="setting-row"><label>Map:</label><select id="set-map"><option value="alpha" selected>The Skeld</option><option value="beta">Space Station Beta</option></select></div>
+        <div class="setting-row"><label>Public Room:</label><button class="btn" id="toggle-public-btn" style="font-size:0.8em;padding:3px 10px">Make Public</button></div>
+      </div>
+
       <button class="btn success" id="start-btn" style="display:none">Start Game</button>
       <p id="lobby-wait" style="color:#888;font-size:0.9em;display:none">Waiting for host to start...</p>
     </div>
@@ -294,6 +409,13 @@
       <p id="meeting-phase-label" style="color:#aaa;margin-bottom:10px"></p>
       <div class="vote-grid" id="vote-grid"></div>
       <button class="btn" id="skip-btn" style="margin-top:10px">Skip Vote</button>
+      <div class="meeting-chat">
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="chat-input-row">
+          <input type="text" id="chat-input" placeholder="Type a message..." maxlength="200" autocomplete="off">
+          <button class="btn" id="chat-send">Send</button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -312,7 +434,9 @@
       <div class="win-title" id="win-title"></div>
       <div class="win-reason" id="win-reason"></div>
       <ul class="role-list" id="role-list"></ul>
+      <div id="gameover-wait" style="display:none;margin-top:15px;color:#aaa;font-size:14px">Waiting for host to start next round...</div>
       <button class="btn primary" id="lobby-btn" style="display:none;margin-top:20px">Back to Lobby</button>
+      <button class="btn" id="leave-btn" style="display:none;margin-top:10px;background:#666">Leave Room</button>
     </div>
   </div>
 
@@ -331,6 +455,8 @@
     <div class="joystick-thumb" id="joystick-thumb"></div>
   </div>
   <div id="mobile-actions"></div>
+
+  <button id="voice-btn" style="position:fixed;top:10px;right:10px;z-index:9000;padding:6px 14px;border:2px solid #555;border-radius:8px;color:#fff;font-family:'Exo 2',Arial;font-size:0.8em;cursor:pointer;background:#444;display:none">Voice Off</button>
 
   <script src="/socket.io/socket.io.js"></script>
   <script src="game.js"></script>
