@@ -398,6 +398,7 @@ io.on('connection', (socket) => {
       color: COLORS[0],
       hat: 'none',
       outfit: 'none',
+      avatar: null,
       x: MAP.spawnPoint.x,
       y: MAP.spawnPoint.y,
       role: null,
@@ -414,7 +415,7 @@ io.on('connection', (socket) => {
 
     socket.emit('roomCreated', {
       code,
-      player: { id: player.id, name: player.name, color: player.color, hat: player.hat, outfit: player.outfit },
+      player: { id: player.id, name: player.name, color: player.color, hat: player.hat, outfit: player.outfit, avatar: player.avatar },
       settings: room.settings,
     });
   });
@@ -446,6 +447,7 @@ io.on('connection', (socket) => {
       color: getAvailableColor(room),
       hat: 'none',
       outfit: 'none',
+      avatar: null,
       x: MAP.spawnPoint.x,
       y: MAP.spawnPoint.y,
       role: null,
@@ -460,7 +462,7 @@ io.on('connection', (socket) => {
     socket.join(roomCode);
 
     const playersList = [...room.players.values()].map(p => ({
-      id: p.id, name: p.name, color: p.color, hat: p.hat, outfit: p.outfit,
+      id: p.id, name: p.name, color: p.color, hat: p.hat, outfit: p.outfit, avatar: p.avatar,
     }));
 
     socket.emit('roomJoined', {
@@ -471,7 +473,7 @@ io.on('connection', (socket) => {
     });
 
     socket.to(roomCode).emit('playerJoined', {
-      id: player.id, name: player.name, color: player.color, hat: player.hat, outfit: player.outfit,
+      id: player.id, name: player.name, color: player.color, hat: player.hat, outfit: player.outfit, avatar: player.avatar,
     });
   });
 
@@ -509,7 +511,7 @@ io.on('connection', (socket) => {
         role: player.role,
         tasks: player.tasks,
         players: [...room.players.values()].map(p => ({
-          id: p.id, name: p.name, color: p.color, hat: p.hat, outfit: p.outfit, x: p.x, y: p.y, alive: true,
+          id: p.id, name: p.name, color: p.color, hat: p.hat, outfit: p.outfit, avatar: p.avatar, x: p.x, y: p.y, alive: true,
         })),
         otherImpostors: player.role === 'impostor' ? otherImpostors : [],
         settings: room.settings,
@@ -733,7 +735,7 @@ io.on('connection', (socket) => {
     }
 
     const playersList = [...room.players.values()].map(p => ({
-      id: p.id, name: p.name, color: p.color, hat: p.hat, outfit: p.outfit,
+      id: p.id, name: p.name, color: p.color, hat: p.hat, outfit: p.outfit, avatar: p.avatar,
     }));
 
     io.to(room.code).emit('returnedToLobby', {
@@ -757,6 +759,26 @@ io.on('connection', (socket) => {
 
     socket.to(roomCode).emit('skinChanged', {
       playerId: socket.id, hat: player.hat, outfit: player.outfit,
+    });
+  });
+
+  // --- CHANGE AVATAR ---
+  socket.on('changeAvatar', ({ avatar }) => {
+    const roomCode = socketToRoom.get(socket.id);
+    if (!roomCode) return;
+    const room = rooms.get(roomCode);
+    if (!room || room.phase !== 'lobby') return;
+    const player = room.players.get(socket.id);
+    if (!player) return;
+
+    if (avatar !== null) {
+      if (typeof avatar !== 'string' || avatar.length > 13334) return;
+      if (!/^[A-Za-z0-9+/=]+$/.test(avatar)) return;
+    }
+
+    player.avatar = avatar;
+    socket.to(roomCode).emit('avatarChanged', {
+      playerId: socket.id, avatar: player.avatar,
     });
   });
 

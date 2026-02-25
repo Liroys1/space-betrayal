@@ -79,6 +79,8 @@ let meetingTimerEnd = 0;
 let otherImpostors = [];
 let killFlashes = [];
 let roleFlash = { active: false, timer: 0, role: '' };
+let avatarCache = new Map(); // playerId -> HTMLImageElement
+let myAvatarData = null; // base64 string or null
 
 // === VISUAL EFFECTS STATE ===
 let particles = [];
@@ -213,6 +215,10 @@ const hatLabel = document.getElementById('hat-label');
 const outfitPrev = document.getElementById('outfit-prev');
 const outfitNext = document.getElementById('outfit-next');
 const outfitLabel = document.getElementById('outfit-label');
+const avatarInput = document.getElementById('avatar-input');
+const avatarUploadBtn = document.getElementById('avatar-upload-btn');
+const avatarRemoveBtn = document.getElementById('avatar-remove-btn');
+const avatarLabel = document.getElementById('avatar-label');
 
 const meetingHeader = document.getElementById('meeting-header');
 const meetingTimer = document.getElementById('meeting-timer');
@@ -311,14 +317,30 @@ function drawSkinPreview() {
   c.strokeRect(cx - R - 5 * s, cy - 10 * s, 7 * s, 16 * s);
 
   // Visor
-  c.fillStyle = '#7ec8e3';
-  c.beginPath();
-  c.ellipse(cx + 6 * s, cy - 6 * s, 9 * s, 7 * s, 0, 0, Math.PI * 2);
-  c.fill();
-  c.fillStyle = 'rgba(255,255,255,0.4)';
-  c.beginPath();
-  c.ellipse(cx + 4 * s, cy - 8 * s, 4 * s, 3 * s, -0.3, 0, Math.PI * 2);
-  c.fill();
+  const avatarImg = avatarCache.get(socket.id);
+  if (avatarImg && avatarImg.complete && avatarImg.naturalWidth > 0) {
+    c.save();
+    c.beginPath();
+    c.ellipse(cx + 6 * s, cy - 6 * s, 9 * s, 7 * s, 0, 0, Math.PI * 2);
+    c.clip();
+    c.drawImage(avatarImg, cx + 6 * s - 9 * s, cy - 6 * s - 7 * s, 18 * s, 14 * s);
+    c.restore();
+    // Visor outline
+    c.strokeStyle = 'rgba(100,170,200,0.6)';
+    c.lineWidth = 1;
+    c.beginPath();
+    c.ellipse(cx + 6 * s, cy - 6 * s, 9 * s, 7 * s, 0, 0, Math.PI * 2);
+    c.stroke();
+  } else {
+    c.fillStyle = '#7ec8e3';
+    c.beginPath();
+    c.ellipse(cx + 6 * s, cy - 6 * s, 9 * s, 7 * s, 0, 0, Math.PI * 2);
+    c.fill();
+    c.fillStyle = 'rgba(255,255,255,0.4)';
+    c.beginPath();
+    c.ellipse(cx + 4 * s, cy - 8 * s, 4 * s, 3 * s, -0.3, 0, Math.PI * 2);
+    c.fill();
+  }
 
   // Outfit
   const outfitId = OUTFITS[myOutfitIndex];
@@ -356,6 +378,59 @@ outfitNext.addEventListener('click', () => {
   outfitLabel.textContent = OUTFIT_NAMES[OUTFITS[myOutfitIndex]];
   drawSkinPreview();
   socket.emit('changeSkin', { hat: HATS[myHatIndex], outfit: OUTFITS[myOutfitIndex] });
+});
+
+// --- AVATAR ---
+function processAvatarFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      const size = 64;
+      const tmpCanvas = document.createElement('canvas');
+      tmpCanvas.width = size;
+      tmpCanvas.height = size;
+      const tc = tmpCanvas.getContext('2d');
+      // Center-crop to square
+      const min = Math.min(img.width, img.height);
+      const sx = (img.width - min) / 2;
+      const sy = (img.height - min) / 2;
+      tc.drawImage(img, sx, sy, min, min, 0, 0, size, size);
+      const dataUrl = tmpCanvas.toDataURL('image/jpeg', 0.6);
+      const base64 = dataUrl.split(',')[1];
+      if (base64.length > 13334) { avatarLabel.textContent = 'Too large'; return; }
+      myAvatarData = base64;
+      cacheAvatar(socket.id, base64);
+      avatarLabel.textContent = 'Uploaded!';
+      avatarRemoveBtn.style.display = 'inline-block';
+      drawSkinPreview();
+      socket.emit('changeAvatar', { avatar: base64 });
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function cacheAvatar(playerId, base64) {
+  if (!base64) { avatarCache.delete(playerId); return; }
+  const img = new Image();
+  img.onload = () => { if (gamePhase === 'lobby') drawSkinPreview(); };
+  img.src = 'data:image/jpeg;base64,' + base64;
+  avatarCache.set(playerId, img);
+}
+
+avatarUploadBtn.addEventListener('click', () => avatarInput.click());
+avatarInput.addEventListener('change', (e) => {
+  if (e.target.files[0]) processAvatarFile(e.target.files[0]);
+  e.target.value = '';
+});
+avatarRemoveBtn.addEventListener('click', () => {
+  myAvatarData = null;
+  avatarCache.delete(socket.id);
+  avatarLabel.textContent = 'No photo';
+  avatarRemoveBtn.style.display = 'none';
+  drawSkinPreview();
+  socket.emit('changeAvatar', { avatar: null });
 });
 
 function darkenColor(hex, factor) {
@@ -1617,21 +1692,35 @@ function drawPlayers() {
     ctx.strokeRect(bpX, -10, 7 * facing, 16);
 
     // Visor
-    ctx.fillStyle = '#7ec8e3';
-    ctx.beginPath();
-    ctx.ellipse(6 * facing, -6, 9, 7, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Visor shine
-    ctx.fillStyle = 'rgba(255,255,255,0.45)';
-    ctx.beginPath();
-    ctx.ellipse(4 * facing, -8, 4, 3, -0.3 * facing, 0, Math.PI * 2);
-    ctx.fill();
-    // Visor outline
-    ctx.strokeStyle = 'rgba(100,170,200,0.4)';
-    ctx.lineWidth = 0.5;
-    ctx.beginPath();
-    ctx.ellipse(6 * facing, -6, 9, 7, 0, 0, Math.PI * 2);
-    ctx.stroke();
+    const pAvatar = avatarCache.get(player.id);
+    if (pAvatar && pAvatar.complete && pAvatar.naturalWidth > 0) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.ellipse(6 * facing, -6, 9, 7, 0, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.scale(facing, 1);
+      ctx.drawImage(pAvatar, 6 - 9, -6 - 7, 18, 14);
+      ctx.restore();
+      ctx.strokeStyle = 'rgba(100,170,200,0.4)';
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.ellipse(6 * facing, -6, 9, 7, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = '#7ec8e3';
+      ctx.beginPath();
+      ctx.ellipse(6 * facing, -6, 9, 7, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.45)';
+      ctx.beginPath();
+      ctx.ellipse(4 * facing, -8, 4, 3, -0.3 * facing, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(100,170,200,0.4)';
+      ctx.lineWidth = 0.5;
+      ctx.beginPath();
+      ctx.ellipse(6 * facing, -6, 9, 7, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
 
     ctx.restore(); // end squash/stretch
 
@@ -2685,10 +2774,15 @@ socket.on('roomCreated', ({ code, player, settings: s }) => {
   gamePhase = 'lobby';
   myHatIndex = 0;
   myOutfitIndex = 0;
+  myAvatarData = null;
+  avatarCache.clear();
+  avatarLabel.textContent = 'No photo';
+  avatarRemoveBtn.style.display = 'none';
   hatLabel.textContent = HAT_NAMES[HATS[0]];
   outfitLabel.textContent = OUTFIT_NAMES[OUTFITS[0]];
   showScreen(lobbyScreen);
   updateLobbyUI([player]);
+  if (player.avatar) cacheAvatar(player.id, player.avatar);
 });
 
 socket.on('roomJoined', ({ code, players: pList, settings: s, host }) => {
@@ -2698,10 +2792,15 @@ socket.on('roomJoined', ({ code, players: pList, settings: s, host }) => {
   gamePhase = 'lobby';
   myHatIndex = 0;
   myOutfitIndex = 0;
+  myAvatarData = null;
+  avatarCache.clear();
+  avatarLabel.textContent = 'No photo';
+  avatarRemoveBtn.style.display = 'none';
   hatLabel.textContent = HAT_NAMES[HATS[0]];
   outfitLabel.textContent = OUTFIT_NAMES[OUTFITS[0]];
   showScreen(lobbyScreen);
   updateLobbyUI(pList);
+  pList.forEach(p => { if (p.avatar) cacheAvatar(p.id, p.avatar); });
 });
 
 socket.on('joinError', ({ message }) => {
@@ -2710,6 +2809,7 @@ socket.on('joinError', ({ message }) => {
 
 socket.on('playerJoined', (player) => {
   lobbyPlayers_data.push(player);
+  if (player.avatar) cacheAvatar(player.id, player.avatar);
   // Just re-query from server -- for simplicity, add new player
   const li = document.createElement('li');
   li.innerHTML = `<span class="player-color" style="background:${player.color}"></span>
@@ -2729,10 +2829,15 @@ socket.on('skinChanged', ({ playerId, hat, outfit }) => {
   }
 });
 
+socket.on('avatarChanged', ({ playerId, avatar }) => {
+  cacheAvatar(playerId, avatar);
+});
+
 socket.on('playerLeft', ({ playerId }) => {
   // Remove from lobby list
   const items = lobbyPlayers.querySelectorAll('li');
   lobbyPlayers_data = lobbyPlayers_data.filter(p => p.id !== playerId);
+  avatarCache.delete(playerId);
   // We can't easily identify by id in the DOM, so just refresh count
   lobbyCount.textContent = `Players in lobby`;
 });
@@ -2760,6 +2865,7 @@ socket.on('gameStarted', ({ role, tasks, players: pList, otherImpostors: otherIm
   taskBar = 0;
   gamePhase = 'playing';
   showScreen(null);
+  pList.forEach(p => { if (p.avatar) cacheAvatar(p.id, p.avatar); });
 
   // Also store role on player objects for impostor identification
   if (myRole === 'impostor') {
@@ -2938,14 +3044,25 @@ socket.on('returnedToLobby', ({ players: pList, settings: s, host }) => {
   players = [];
   killFlashes = [];
   roleFlash.active = false;
-  // Restore skin indices from server data
+  // Restore skin indices and avatar from server data
   const me = pList.find(p => p.id === socket.id);
   if (me) {
     myHatIndex = HATS.indexOf(me.hat) >= 0 ? HATS.indexOf(me.hat) : 0;
     myOutfitIndex = OUTFITS.indexOf(me.outfit) >= 0 ? OUTFITS.indexOf(me.outfit) : 0;
     hatLabel.textContent = HAT_NAMES[HATS[myHatIndex]];
     outfitLabel.textContent = OUTFIT_NAMES[OUTFITS[myOutfitIndex]];
+    if (me.avatar) {
+      myAvatarData = me.avatar;
+      avatarLabel.textContent = 'Uploaded!';
+      avatarRemoveBtn.style.display = 'inline-block';
+    } else {
+      myAvatarData = null;
+      avatarLabel.textContent = 'No photo';
+      avatarRemoveBtn.style.display = 'none';
+    }
   }
+  avatarCache.clear();
+  pList.forEach(p => { if (p.avatar) cacheAvatar(p.id, p.avatar); });
   showScreen(lobbyScreen);
   updateLobbyUI(pList);
 });
