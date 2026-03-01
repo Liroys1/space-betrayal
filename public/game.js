@@ -1323,13 +1323,18 @@ function handleCanvasAction(clientX, clientY) {
   const me = players.find(p => p.id === myId);
   if (!me || !me.alive) return false;
 
+  // Convert viewport coordinates to canvas pixel coordinates
+  const rect = canvas.getBoundingClientRect();
+  const cx = (clientX - rect.left) * (canvas.width / rect.width);
+  const cy = (clientY - rect.top) * (canvas.height / rect.height);
+
   let handled = false;
 
   if (window._actionButtons) {
     for (const btn of window._actionButtons) {
       if (btn.hitbox &&
-          clientX >= btn.hitbox.x && clientX <= btn.hitbox.x + btn.hitbox.w &&
-          clientY >= btn.hitbox.y && clientY <= btn.hitbox.y + btn.hitbox.h) {
+          cx >= btn.hitbox.x && cx <= btn.hitbox.x + btn.hitbox.w &&
+          cy >= btn.hitbox.y && cy <= btn.hitbox.y + btn.hitbox.h) {
         if (btn.action === 'kill') socket.emit('doKill');
         else if (btn.action === 'report') socket.emit('reportBody');
         else if (btn.action === 'use') {
@@ -1384,8 +1389,8 @@ function handleCanvasAction(clientX, clientY) {
   // Check sabotage menu clicks
   if (sabotageMenuOpen && window._sabotageMenuButtons) {
     for (const btn of window._sabotageMenuButtons) {
-      if (clientX >= btn.x && clientX <= btn.x + btn.w &&
-          clientY >= btn.y && clientY <= btn.y + btn.h) {
+      if (cx >= btn.x && cx <= btn.x + btn.w &&
+          cy >= btn.y && cy <= btn.y + btn.h) {
         socket.emit('triggerSabotage', { type: btn.type });
         sabotageMenuOpen = false;
         return true;
@@ -3939,22 +3944,32 @@ taskClose.addEventListener('touchend', (e) => { e.preventDefault(); closeTask(fa
 
 // --- UNIVERSAL TOUCH-TO-MOUSE ADAPTER FOR TASK CANVAS ---
 // This bridges touch events to the per-task mouse handlers so ALL tasks work on mobile
+function touchToMouseEvent(touch) {
+  const rect = taskCanvas.getBoundingClientRect();
+  return {
+    clientX: touch.clientX,
+    clientY: touch.clientY,
+    offsetX: touch.clientX - rect.left,
+    offsetY: touch.clientY - rect.top,
+  };
+}
 taskCanvas.addEventListener('touchstart', (e) => {
   e.preventDefault();
   const touch = e.touches[0];
-  if (taskCanvas.onmousedown) taskCanvas.onmousedown({ clientX: touch.clientX, clientY: touch.clientY });
+  if (taskCanvas.onmousedown) taskCanvas.onmousedown(touchToMouseEvent(touch));
 }, { passive: false });
 taskCanvas.addEventListener('touchmove', (e) => {
   e.preventDefault();
   const touch = e.touches[0];
-  if (taskCanvas.onmousemove) taskCanvas.onmousemove({ clientX: touch.clientX, clientY: touch.clientY });
+  if (taskCanvas.onmousemove) taskCanvas.onmousemove(touchToMouseEvent(touch));
 }, { passive: false });
 taskCanvas.addEventListener('touchend', (e) => {
   e.preventDefault();
   const touch = e.changedTouches[0];
-  if (taskCanvas.onmouseup) taskCanvas.onmouseup({ clientX: touch.clientX, clientY: touch.clientY });
+  const evt = touchToMouseEvent(touch);
+  if (taskCanvas.onmouseup) taskCanvas.onmouseup(evt);
   // Also trigger onclick for tap-based tasks (asteroids, download, calibrate, simon, unlock)
-  if (taskCanvas.onclick) taskCanvas.onclick({ clientX: touch.clientX, clientY: touch.clientY });
+  if (taskCanvas.onclick) taskCanvas.onclick(evt);
 }, { passive: false });
 
 // --- WIRES TASK ---

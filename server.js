@@ -393,14 +393,17 @@ function buildSnapshot(room) {
 
 function assignRoles(room) {
   const playerList = [...room.players.values()];
-  // Prefer players who weren't impostor last round
+  // Fisher-Yates shuffle for truly random order
+  for (let i = playerList.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [playerList[i], playerList[j]] = [playerList[j], playerList[i]];
+  }
+  // Prefer players who weren't impostor last round: move previous impostors to the end
   const prev = room.previousImpostors || new Set();
-  const shuffled = playerList.sort((a, b) => {
-    const aWas = prev.has(a.id) ? 1 : 0;
-    const bWas = prev.has(b.id) ? 1 : 0;
-    if (aWas !== bWas) return aWas - bWas;
-    return Math.random() - 0.5;
-  });
+  const shuffled = [
+    ...playerList.filter(p => !prev.has(p.id)),
+    ...playerList.filter(p => prev.has(p.id)),
+  ];
 
   const numImpostors = room.settings.numImpostors;
   for (let i = 0; i < shuffled.length; i++) {
