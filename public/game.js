@@ -3939,22 +3939,32 @@ taskClose.addEventListener('touchend', (e) => { e.preventDefault(); closeTask(fa
 
 // --- UNIVERSAL TOUCH-TO-MOUSE ADAPTER FOR TASK CANVAS ---
 // This bridges touch events to the per-task mouse handlers so ALL tasks work on mobile
+function touchToMouseEvent(touch) {
+  const rect = taskCanvas.getBoundingClientRect();
+  return {
+    clientX: touch.clientX,
+    clientY: touch.clientY,
+    offsetX: touch.clientX - rect.left,
+    offsetY: touch.clientY - rect.top,
+  };
+}
 taskCanvas.addEventListener('touchstart', (e) => {
   e.preventDefault();
   const touch = e.touches[0];
-  if (taskCanvas.onmousedown) taskCanvas.onmousedown({ clientX: touch.clientX, clientY: touch.clientY });
+  if (taskCanvas.onmousedown) taskCanvas.onmousedown(touchToMouseEvent(touch));
 }, { passive: false });
 taskCanvas.addEventListener('touchmove', (e) => {
   e.preventDefault();
   const touch = e.touches[0];
-  if (taskCanvas.onmousemove) taskCanvas.onmousemove({ clientX: touch.clientX, clientY: touch.clientY });
+  if (taskCanvas.onmousemove) taskCanvas.onmousemove(touchToMouseEvent(touch));
 }, { passive: false });
 taskCanvas.addEventListener('touchend', (e) => {
   e.preventDefault();
   const touch = e.changedTouches[0];
-  if (taskCanvas.onmouseup) taskCanvas.onmouseup({ clientX: touch.clientX, clientY: touch.clientY });
+  const evt = touchToMouseEvent(touch);
+  if (taskCanvas.onmouseup) taskCanvas.onmouseup(evt);
   // Also trigger onclick for tap-based tasks (asteroids, download, calibrate, simon, unlock)
-  if (taskCanvas.onclick) taskCanvas.onclick({ clientX: touch.clientX, clientY: touch.clientY });
+  if (taskCanvas.onclick) taskCanvas.onclick(evt);
 }, { passive: false });
 
 // --- WIRES TASK ---
