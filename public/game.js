@@ -1317,17 +1317,19 @@ document.addEventListener('keyup', e => {
   keys[e.key.toLowerCase()] = false;
 });
 
-// Click on canvas for action buttons
-canvas.addEventListener('click', (e) => {
-  if (gamePhase !== 'playing' || activeTask) return;
+// Shared handler for canvas action button interactions (click + touch)
+function handleCanvasAction(clientX, clientY) {
+  if (gamePhase !== 'playing' || activeTask) return false;
   const me = players.find(p => p.id === myId);
-  if (!me || !me.alive) return;
+  if (!me || !me.alive) return false;
+
+  let handled = false;
 
   if (window._actionButtons) {
     for (const btn of window._actionButtons) {
       if (btn.hitbox &&
-          e.clientX >= btn.hitbox.x && e.clientX <= btn.hitbox.x + btn.hitbox.w &&
-          e.clientY >= btn.hitbox.y && e.clientY <= btn.hitbox.y + btn.hitbox.h) {
+          clientX >= btn.hitbox.x && clientX <= btn.hitbox.x + btn.hitbox.w &&
+          clientY >= btn.hitbox.y && clientY <= btn.hitbox.y + btn.hitbox.h) {
         if (btn.action === 'kill') socket.emit('doKill');
         else if (btn.action === 'report') socket.emit('reportBody');
         else if (btn.action === 'use') {
@@ -1373,6 +1375,7 @@ canvas.addEventListener('click', (e) => {
           viewingAdminTable = !viewingAdminTable;
           if (viewingAdminTable) socket.emit('requestAdminTable');
         }
+        handled = true;
         break;
       }
     }
@@ -1381,17 +1384,32 @@ canvas.addEventListener('click', (e) => {
   // Check sabotage menu clicks
   if (sabotageMenuOpen && window._sabotageMenuButtons) {
     for (const btn of window._sabotageMenuButtons) {
-      if (e.clientX >= btn.x && e.clientX <= btn.x + btn.w &&
-          e.clientY >= btn.y && e.clientY <= btn.y + btn.h) {
+      if (clientX >= btn.x && clientX <= btn.x + btn.w &&
+          clientY >= btn.y && clientY <= btn.y + btn.h) {
         socket.emit('triggerSabotage', { type: btn.type });
         sabotageMenuOpen = false;
-        return;
+        return true;
       }
     }
     // Click outside menu closes it
     sabotageMenuOpen = false;
   }
+  return handled;
+}
+
+// Click on canvas for action buttons (desktop)
+canvas.addEventListener('click', (e) => {
+  handleCanvasAction(e.clientX, e.clientY);
 });
+
+// Touch on canvas for action buttons (mobile) — fires instantly on touch, no 300ms delay
+canvas.addEventListener('touchstart', (e) => {
+  if (gamePhase !== 'playing' || activeTask) return;
+  const touch = e.touches[0];
+  if (touch && handleCanvasAction(touch.clientX, touch.clientY)) {
+    e.preventDefault();
+  }
+}, { passive: false });
 
 function handleSabotageFix(stationIndex) {
   if (!activeSabotage) return;
@@ -6082,6 +6100,8 @@ function gameLoop(timestamp) {
   updateParticles();
   updatePlayerAnims();
   render();
+  // Update mobile action buttons every frame for instant responsiveness
+  if (typeof updateMobileActionButtons === 'function') updateMobileActionButtons();
   requestAnimationFrame(gameLoop);
 }
 
@@ -6105,18 +6125,27 @@ function showMobileControls(show) {
   mobileActions.style.display = show ? 'flex' : 'none';
 }
 
+let _lastMobileBtnKey = '';
+let _mobileBtnActions = {}; // label -> action, updated every frame without DOM rebuild
+let _lastMobileActionTime = 0; // debounce guard against double-fire
+
 function updateMobileActionButtons() {
   if (!isMobile) return;
   const me = players.find(p => p.id === myId);
   if (!me || gamePhase !== 'playing') {
-    mobileActions.innerHTML = '';
+    if (_lastMobileBtnKey !== '') {
+      mobileActions.innerHTML = '';
+      _lastMobileBtnKey = '';
+      _mobileBtnActions = {};
+    }
     return;
   }
 
   const btns = [];
   const isGhost = !me.alive;
 
-  // Kill button (impostor, alive only)
+  // Kill button — ALWAYS visible for impostor so it's always tappable
+  // Shows red when active (target in range + no cooldown), grey when disabled
   if (!isGhost && myRole === 'impostor') {
     let hasTarget = false;
     for (const p of players) {
@@ -6124,9 +6153,30 @@ function updateMobileActionButtons() {
         hasTarget = true; break;
       }
     }
-    if (hasTarget && (!me.killCooldown || me.killCooldown <= 0)) {
-      btns.push({ label: 'KILL', bg: '#cc0000', action: () => socket.emit('doKill') });
+    const killReady = hasTarget && (!me.killCooldown || me.killCooldown <= 0);
+    const cooldownText = me.killCooldown > 0 ? Math.ceil(me.killCooldown) + 's' : '';
+    btns.push({
+      label: cooldownText ? `KILL ${cooldownText}` : 'KILL',
+      actionKey: 'KILL', // stable key for action lookup (label changes with cooldown)
+      bg: killReady ? '#cc0000' : '#444444',
+      disabled: !killReady,
+      action: () => { if (killReady) socket.emit('doKill'); },
+    });
+  }
+
+  // Sheriff shoot button — ALWAYS visible for sheriff so it's always tappable
+  if (!isGhost && mySpecialRole === 'sheriff' && myRole === 'crewmate') {
+    let hasTarget = false;
+    for (const p of players) {
+      if (p.id !== myId && p.alive && distance(me, p) < KILL_RANGE) { hasTarget = true; break; }
     }
+    const shootReady = hasTarget && me.sheriffShots > 0;
+    btns.push({
+      label: 'SHOOT',
+      bg: shootReady ? '#ccaa00' : '#444444',
+      disabled: !shootReady,
+      action: () => { if (shootReady) socket.emit('sheriffKill'); },
+    });
   }
 
   // Report (alive only)
@@ -6200,17 +6250,6 @@ function updateMobileActionButtons() {
     }
   }
 
-  // Sheriff shoot button (mobile)
-  if (!isGhost && mySpecialRole === 'sheriff' && myRole === 'crewmate') {
-    let hasTarget = false;
-    for (const p of players) {
-      if (p.id !== myId && p.alive && distance(me, p) < KILL_RANGE) { hasTarget = true; break; }
-    }
-    if (hasTarget) {
-      btns.push({ label: 'SHOOT', bg: '#ccaa00', action: () => socket.emit('sheriffKill') });
-    }
-  }
-
   // Scientist vitals button (mobile)
   if (!isGhost && mySpecialRole === 'scientist' && myRole === 'crewmate') {
     btns.push({ label: 'VITALS', bg: '#aa44dd', action: () => socket.emit('checkVitals') });
@@ -6232,7 +6271,6 @@ function updateMobileActionButtons() {
 
   // Quick chat button (always available for alive players)
   btns.push({ label: 'CHAT', bg: '#336699', action: () => {
-    // Cycle through quick chat messages
     const msgId = (window._quickChatIdx || 0) % QUICK_MESSAGES.length;
     window._quickChatIdx = msgId + 1;
     socket.emit('quickChat', { messageId: msgId });
@@ -6247,21 +6285,57 @@ function updateMobileActionButtons() {
     floatingMessages.push({ playerId: myId, emoji: EMOTES[emoteId], startTime: Date.now(), duration: 2500 });
   }});
 
-  // Only rebuild if changed
-  const currentLabels = [...mobileActions.children].map(c => c.textContent).join(',');
-  const newLabels = btns.map(b => b.label).join(',');
-  if (currentLabels === newLabels) return;
+  // Use stable actionKey for DOM rebuild comparison (avoids rebuilds from cooldown text changes)
+  const structuralKey = btns.map(b => (b.actionKey || b.label)).join(',');
 
-  mobileActions.innerHTML = '';
-  mobileActions.style.flexDirection = 'column';
-  mobileActions.style.alignItems = 'center';
+  // Always update the action closures so they capture fresh state
+  _mobileBtnActions = {};
   for (const btn of btns) {
-    const el = document.createElement('div');
-    el.className = 'mobile-action-btn';
-    el.style.background = btn.bg;
-    el.textContent = btn.label;
-    el.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); btn.action(); });
-    mobileActions.appendChild(el);
+    _mobileBtnActions[btn.actionKey || btn.label] = btn.action;
+  }
+
+  // Full DOM rebuild only when the set of buttons changes (not for text/style updates)
+  if (structuralKey !== _lastMobileBtnKey) {
+    _lastMobileBtnKey = structuralKey;
+    mobileActions.innerHTML = '';
+    mobileActions.style.flexDirection = 'column';
+    mobileActions.style.alignItems = 'center';
+    for (const btn of btns) {
+      const el = document.createElement('div');
+      el.className = 'mobile-action-btn';
+      el.style.background = btn.bg;
+      if (btn.disabled) el.style.opacity = '0.5';
+      else el.style.opacity = '1';
+      el.textContent = btn.label;
+      el.dataset.actionKey = btn.actionKey || btn.label;
+      const actionKey = btn.actionKey || btn.label;
+      // Use both touchstart and click for maximum mobile compatibility
+      // Guard against double-fire with a timestamp debounce
+      const handler = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const now = Date.now();
+        if (now - _lastMobileActionTime < 200) return; // debounce
+        _lastMobileActionTime = now;
+        // Always use the latest action closure (not the one captured at DOM creation)
+        const action = _mobileBtnActions[actionKey];
+        if (action) action();
+      };
+      el.addEventListener('touchstart', handler, { passive: false });
+      el.addEventListener('click', handler);
+      mobileActions.appendChild(el);
+    }
+  } else {
+    // Update text, background, and opacity in-place without destroying DOM elements
+    const children = mobileActions.children;
+    for (let i = 0; i < btns.length && i < children.length; i++) {
+      const el = children[i];
+      const btn = btns[i];
+      if (el.textContent !== btn.label) el.textContent = btn.label;
+      if (el.style.background !== btn.bg) el.style.background = btn.bg;
+      const newOpacity = btn.disabled ? '0.5' : '1';
+      if (el.style.opacity !== newOpacity) el.style.opacity = newOpacity;
+    }
   }
 }
 
@@ -6326,8 +6400,7 @@ if (isMobile) {
     showMobileControls(gamePhase === 'playing' && !screen);
   };
 
-  // Update mobile action buttons periodically
-  setInterval(updateMobileActionButtons, 200);
+  // Mobile action buttons are now updated from the game loop for instant responsiveness
 }
 
 // ============================================
